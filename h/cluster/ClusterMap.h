@@ -8,14 +8,13 @@
 #ifndef CLUSTER_CLUSTERMAP_H_
 #define CLUSTER_CLUSTERMAP_H_
 #include <stdbool.h>
-#define MAXIPSIZE        63
-#define MAXIPSIZE_STR    (MAXIPSIZE + 1)
+#include <network/Socket.h>
 
 typedef struct Node {
         uint32_t        id;
-
-        char            ip[MAXIPSIZE_STR];
+        char            host[NETWORK_HOST_LEN + 1];
         int             port;
+        void		*user_define;
 } Node;
 
 typedef struct ClusterMap ClusterMap;
