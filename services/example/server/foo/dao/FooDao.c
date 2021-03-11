@@ -46,7 +46,7 @@ static int putFoo(FooDao* this, Foo *foo) {
                 map->m->put(map, &s->id, s);
                 listAddTail(&s->element, &priv_p->list);
                 priv_p->list_size++;
-//                DLOG("Add new foo, id:%d", s->id);
+                DLOG("Add new foo, id:%d", s->id);
         } else {
                 memcpy(s, foo, sizeof(*s) + foo->path_length);
 //                DLOG("Replace old foo, id:%d", s->id);

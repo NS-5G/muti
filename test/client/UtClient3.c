@@ -75,10 +75,12 @@ static void* UtClientDoTest(void *p) {
                 }
         }
         while (done_number != round_max) {
-                usleep(1000);
+                usleep(1000000);
+                DLOG("DONE:%d round_max:%d", done_number, round_max);
         }
 
         __sync_add_and_fetch(&tp->done_thread, 1);
+        DLOG("Done thread:%d", tp->done_thread);
         return NULL;
 }
 
@@ -92,7 +94,7 @@ int UtClient3(int argv, char **argvs) {
 	tp.done_thread = 0;
 
 	param_tp.do_batch = NULL;
-	param_tp.thread_number = 0;
+	param_tp.thread_number = 12;
 
 	bool rc = initThreadPool(&tp.work_tp, &param_tp);
 	assert(rc == true);

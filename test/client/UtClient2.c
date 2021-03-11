@@ -22,7 +22,7 @@
 
 static void UtClientFooPutSendCallback(Client *client, Response *resp, void *arg) {
         if (resp->error_id) {
-//                ELOG("Send request failed.");
+           //     ELOG("Send request failed error_id:%d.", resp->error_id);
         }
         volatile int *done_number = arg;
         __sync_add_and_fetch(done_number, 1);
@@ -99,12 +99,13 @@ static void* UtClientDoTest(void *p) {
 //                        DLOG("Put success round:%d!!", round);
                 } else {
                         __sync_add_and_fetch(&done_number, 1);
-//                        DLOG("Send request failed!!");
+                        DLOG("Send request failed!!");
                 }
         }
         while (done_number != round_max) {
                 usleep(1000);
         }
+        DLOG("Done:%d", done_number);
         client.m->destroy(&client);
 	tp1.read_tp.m->destroy(&tp1.read_tp);
 	tp1.write_tp.m->destroy(&tp1.write_tp);

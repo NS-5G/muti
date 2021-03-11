@@ -68,8 +68,6 @@ typedef struct SocketPrivate {
         SocketLinuxParam        param;
         SocketIPType            ip_type;
         int                     sfd;
-        int                     cfd;
-        int                     efd;
         pthread_t               epoll_tid;
         bool                    stop;
         pthread_spinlock_t      conn_lock;
@@ -399,15 +397,15 @@ static void * socketEpollWaitingThread(void *p) {
         int rc;
         bool rc1;
 
-        priv_p->efd = epoll_create1(0);
-        if (priv_p->efd == -1) {
+        int efd = epoll_create1(0);
+        if (efd == -1) {
                 ELOG("epoll_create/() failed, error: %s", strerror(errno));
                 assert(0);
         }
         memset(&event, 0, sizeof(event));
         event.data.fd = priv_p->sfd;
         event.events= EPOLLIN | EPOLLET;
-        rc = epoll_ctl(priv_p->efd, EPOLL_CTL_ADD, priv_p->sfd, &event);
+        rc = epoll_ctl(efd, EPOLL_CTL_ADD, priv_p->sfd, &event);
         if (rc == -1) {
                 perror("epoll_ctl");
                 assert(0);
@@ -419,7 +417,7 @@ static void * socketEpollWaitingThread(void *p) {
         /* The event loop */
         while (!priv_p->stop) {
                 int n, i;
-                n = epoll_wait(priv_p->efd, events, MAXEVENTS,10000); // 10 seconds
+                n = epoll_wait(efd, events, MAXEVENTS,10000); // 10 seconds
                 for (i = 0; i < n; i++) {
                         if ((events[i].events & EPOLLERR)||
                                         (events[i].events & EPOLLHUP)||
@@ -427,12 +425,12 @@ static void * socketEpollWaitingThread(void *p) {
                                 /* An error has occured on this fd, or the socket is not
                                    ready for reading (why were we notified then?) */
                                 if (events[i].data.fd == priv_p->sfd) {
-                                        epoll_ctl(priv_p->efd, EPOLL_CTL_DEL,  events[i].data.fd, &event);
+                                        epoll_ctl(efd, EPOLL_CTL_DEL,  events[i].data.fd, NULL);
                                         continue;
                                 }
                                 conn_p = events[i].data.ptr;
                                 ELOG("Server:Epoll error, tid:%lu, fd:%d, i:%d, event:%x (%p)\n", pthread_self(), conn_p->fd, i, events[i].events, conn_p);
-                                epoll_ctl(priv_p->efd, EPOLL_CTL_DEL, conn_p->fd, &event);
+                                epoll_ctl(efd, EPOLL_CTL_DEL, conn_p->fd, NULL);
 
                                 pthread_t tid;
                                 pthread_attr_t attr;
@@ -481,7 +479,7 @@ static void * socketEpollWaitingThread(void *p) {
 //                                        event.data.fd = infd;
                                         event.data.ptr = conn_p;
                                         event.events= EPOLLIN | EPOLLOUT | EPOLLET;
-                                        rc = epoll_ctl(priv_p->efd, EPOLL_CTL_ADD, infd, &event);
+                                        rc = epoll_ctl(efd, EPOLL_CTL_ADD, infd, &event);
                                         if (rc == -1) {
                                                 ELOG("epoll_ctl error");
                                                 assert(0);
@@ -525,7 +523,7 @@ static void * socketEpollWaitingThread(void *p) {
                 }
         }
         free(events);
-        close(priv_p->efd);
+        close(efd);
         return NULL;
 }
 
@@ -700,40 +698,31 @@ out:
         return sfd;
 }
 
+pthread_t ClientEpThreadId = -1;
+int ClientNumber = 0;
+int ClientEpollFd = -1;
+volatile int ClientLockInit = 0;
+pthread_mutex_t ClientLock;
+
 static void * socketEpollWaitingClientThread(void *p) {
         prctl(PR_SET_NAME, "socketEpollWaitingClientThread");
-        Socket* socket_p = p;
-        SocketPrivate *priv_p = socket_p->p;
-        struct epoll_event event;
         struct epoll_event* events;
         ConnectionLinux *conn_p;
-        int rc;
         bool rc1;
 
-        priv_p->efd = epoll_create1(0);
-        if (priv_p->efd == -1) {
+        ClientEpollFd = epoll_create1(0);
+        if (ClientEpollFd == -1) {
                 ELOG("epoll_create/() failed, error: %s", strerror(errno));
                 assert(0);
         }
-        conn_p = createConnection(socket_p, priv_p->cfd);
-//        event.data.fd = priv_p->cfd;
-        event.data.ptr = conn_p;
-        event.events= EPOLLIN | EPOLLOUT | EPOLLET;
-        rc = epoll_ctl(priv_p->efd, EPOLL_CTL_ADD, priv_p->cfd, &event);
-        if (rc == -1) {
-                ELOG("epoll_ctl error");
-                assert(0);
-        }
-        DLOG_SOCKET("Client:new connect(%p)", conn_p);
-        priv_p->param.super.onConnect(&conn_p->super);
 
         /* Buffer where events are returned */
-        events = calloc(1, sizeof(event));
+        events = calloc(64, sizeof(*events));
 
         /* The event loop */
-        while (!priv_p->stop) {
+        while (ClientNumber) {
                 int n, i;
-                n = epoll_wait(priv_p->efd, events, 1, 1000); // 10 seconds
+                n = epoll_wait(ClientEpollFd, events, 64, 1000); // 1 seconds
                 for (i = 0; i < n; i++) {
                         if ((events[i].events & EPOLLERR)||
                                         (events[i].events & EPOLLHUP)||
@@ -742,7 +731,7 @@ static void * socketEpollWaitingClientThread(void *p) {
                                    ready for reading (why were we notified then?) */
                                 conn_p = events[i].data.ptr;
                                 ELOG("CLIENT: Epoll error, event:%x (%p)", events[i].events, conn_p);
-                                epoll_ctl(priv_p->efd, EPOLL_CTL_DEL, priv_p->cfd, &event);
+                                epoll_ctl(ClientEpollFd, EPOLL_CTL_DEL, conn_p->fd, NULL);
                                 socketCloseConnection(conn_p);
                                 continue;
                         } else if (events[i].events & (EPOLLIN | EPOLLOUT)) {
@@ -779,18 +768,47 @@ static void * socketEpollWaitingClientThread(void *p) {
                 }
         }
         free(events);
-        close(priv_p->efd);
+        close(ClientEpollFd);
+        ClientEpollFd = -1;
         return NULL;
 }
 
 static bool socketClientStart(Socket *socket) {
         SocketPrivate *priv_p = socket->p;
 
-        priv_p->cfd = sockPrepareClient(priv_p);
-        if (priv_p->cfd == -1) return false;
+        int cfd = sockPrepareClient(priv_p);
+        if (cfd == -1) return false;
 
-        int rc = pthread_create(&priv_p->epoll_tid, NULL, socketEpollWaitingClientThread, (void *)socket);
-        assert(rc == 0);
+        int lock_init = __sync_fetch_and_add(&ClientLockInit, 1);
+        if (lock_init == 0) {
+                pthread_mutex_init(&ClientLock, NULL);
+        }
+        pthread_mutex_lock(&ClientLock);
+        ClientNumber++;
+        if (ClientNumber == 1) {
+                int rc = pthread_create(&ClientEpThreadId, NULL, socketEpollWaitingClientThread, (void *)socket);
+                assert(rc == 0);
+        }
+        while (ClientEpollFd == -1) {
+                usleep(100000);
+        }
+        pthread_mutex_unlock(&ClientLock);
+
+        ConnectionLinux *conn_p;
+        struct epoll_event event;
+        int rc;
+
+        conn_p = createConnection(socket, cfd);
+        event.data.ptr = conn_p;
+        event.events= EPOLLIN | EPOLLOUT | EPOLLET;
+        rc = epoll_ctl(ClientEpollFd, EPOLL_CTL_ADD, cfd, &event);
+        if (rc == -1) {
+                ELOG("epoll_ctl error");
+                assert(0);
+        }
+        DLOG_SOCKET("Client:new connect(%p)", conn_p);
+        priv_p->param.super.onConnect(&conn_p->super);
+
         return true;
 }
 
@@ -810,7 +828,6 @@ static void destroy(Socket* obj) {
         pthread_spin_lock(&priv_p->conn_lock);
         listForEachEntrySafe(conn_p, conn_p1, &priv_p->conn_head, element) {
                 conn_p->super.m->close(&conn_p->super);
-//                shutdown(conn_p->fd, SHUT_RDWR);
         }
         while (!listEmpty(&priv_p->conn_head)) {
                 pthread_spin_unlock(&priv_p->conn_lock);
@@ -818,8 +835,19 @@ static void destroy(Socket* obj) {
                 pthread_spin_lock(&priv_p->conn_lock);
         }
         pthread_spin_unlock(&priv_p->conn_lock);
+
         priv_p->stop = true;
-        pthread_join(priv_p->epoll_tid, NULL);
+        if (priv_p->param.super.type == SOCKET_TYPE_SERVER) {
+                pthread_join(priv_p->epoll_tid, NULL);
+        } else {
+                pthread_mutex_lock(&ClientLock);
+                ClientNumber --;
+                if (ClientNumber == 0) {
+                        pthread_join(ClientEpThreadId, NULL);
+                        ClientEpThreadId = -1;
+                }
+                pthread_mutex_unlock(&ClientLock);
+        }
 
 	free(priv_p);
 }
@@ -853,10 +881,8 @@ bool initSocketLinux(Socket* socket_p, SocketLinuxParam* param) {
 	socket_p->m = &method;
 	memcpy(&priv_p->param, param, sizeof(*param));
 	priv_p->sfd = -1;
-	priv_p->cfd = -1;
 	priv_p->stop = false;
 	priv_p->ip_type = SOCKET_IP_TYPE_IPV4;
-	priv_p->efd = -1;
         listHeadInit(&priv_p->conn_head);
         pthread_spin_init(&priv_p->conn_lock, 0);
         switch(param->super.type) {
