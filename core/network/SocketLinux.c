@@ -431,8 +431,8 @@ static void * socketEpollWaitingThread(void *p) {
                                         continue;
                                 }
                                 conn_p = events[i].data.ptr;
-                                ELOG("Server:Epoll error, tid:%lu, fd:%d, i:%d, event:%x (%p)\n", pthread_self(), events[i].data.fd, i, events[i].events, conn_p);
-                                epoll_ctl(priv_p->efd, EPOLL_CTL_DEL,  events[i].data.fd, &event);
+                                ELOG("Server:Epoll error, tid:%lu, fd:%d, i:%d, event:%x (%p)\n", pthread_self(), conn_p->fd, i, events[i].events, conn_p);
+                                epoll_ctl(priv_p->efd, EPOLL_CTL_DEL, conn_p->fd, &event);
 
                                 pthread_t tid;
                                 pthread_attr_t attr;
