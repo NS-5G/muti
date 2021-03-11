@@ -478,7 +478,7 @@ static void * socketEpollWaitingThread(void *p) {
                                                 assert(0);
 
                                         conn_p = createConnection(socket_p, infd);
-                                        event.data.fd = infd;
+//                                        event.data.fd = infd;
                                         event.data.ptr = conn_p;
                                         event.events= EPOLLIN | EPOLLOUT | EPOLLET;
                                         rc = epoll_ctl(priv_p->efd, EPOLL_CTL_ADD, infd, &event);
@@ -716,7 +716,7 @@ static void * socketEpollWaitingClientThread(void *p) {
                 assert(0);
         }
         conn_p = createConnection(socket_p, priv_p->cfd);
-        event.data.fd = priv_p->cfd;
+//        event.data.fd = priv_p->cfd;
         event.data.ptr = conn_p;
         event.events= EPOLLIN | EPOLLOUT | EPOLLET;
         rc = epoll_ctl(priv_p->efd, EPOLL_CTL_ADD, priv_p->cfd, &event);
@@ -742,7 +742,7 @@ static void * socketEpollWaitingClientThread(void *p) {
                                    ready for reading (why were we notified then?) */
                                 conn_p = events[i].data.ptr;
                                 ELOG("CLIENT: Epoll error, event:%x (%p)", events[i].events, conn_p);
-                                epoll_ctl(priv_p->efd, EPOLL_CTL_DEL, events[i].data.fd, &event);
+                                epoll_ctl(priv_p->efd, EPOLL_CTL_DEL, priv_p->cfd, &event);
                                 socketCloseConnection(conn_p);
                                 continue;
                         } else if (events[i].events & (EPOLLIN | EPOLLOUT)) {
