@@ -5,128 +5,128 @@
  *      Author: Zhen Xiong
  */
 
-#ifndef RES_CLUSTER_H_
-#define RES_CLUSTER_H_
+#ifndef SHARE_CLUSTER_H_
+#define SHARE_CLUSTER_H_
 
 #include <res/Resource.h>
 #include <util/Map.h>
 #include <network/Socket.h>
 
 typedef enum {
-	ClusterRequestId_GetOSDMapLatestVersion = 0,
-        ClusterRequestId_GetLatestOSDMap,
-        ClusterRequestId_AddOSDNode,
-	ClusterRequestId_RemoveOSDNode,
-	ClusterRequestId_KeepAliveOSD,
+	ClusterRequestId_GetObjectServiceMapLatestVersion = 0,
+        ClusterRequestId_GetLatestObjectServiceMap,
+        ClusterRequestId_AddObjectService,
+	ClusterRequestId_RemoveObjectService,
+	ClusterRequestId_KeepAliveObjectService,
 	ClusterRequestId_KeepAliveClient,
-	ClusterRequestId_GetOSDMapChangeLog,
+	ClusterRequestId_GetObjectServiceMapChangeLog,
 	ClusterRequestId_Status,
 } ClusterRequestId;
 
-typedef enum OSDNodeStatus {
-	OSDNodeStatus_Online = 1,
-	OSDNodeStatus_Starting,
-	OSDNodeStatus_Syncing,
-	OSDNodeStatus_Offline,
-	OSDNodeStatus_Deleting,
-} OSDNodeStatus;
+typedef enum ObjectServiceStatus {
+	ObjectServiceStatus_Online = 1,
+	ObjectServiceStatus_Starting,
+	ObjectServiceStatus_Syncing,
+	ObjectServiceStatus_Offline,
+	ObjectServiceStatus_Deleting,
+} ObjectServiceStatus;
 
 typedef struct BSet BSet;
 
-typedef struct OSDNode {
-        uint32_t        id;
-        OSDNodeStatus	status;
-        char            host[NETWORK_HOST_LEN + 1];
-        int32_t         port;
-        uint32_t	bset_length;
-        uint32_t	*bset_ids;
-} OSDNode;
+typedef struct ObjectService {
+        uint32_t        	id;
+        ObjectServiceStatus	status;
+        char            	host[NETWORK_HOST_LEN + 1];
+        int32_t         	port;
+        uint32_t		bset_length;
+        uint32_t		*bset_ids;
+} ObjectService;
 
 struct BSet {
-	OSDNode		**osd_nodes;
+	ObjectService		**object_services;
 };
 
-typedef enum OSDMapStatus {
-	OSDMapStatus_Normal = 1,
-	OSDMapStatus_Starting,
-	OSDMapStatus_Changing,
-} OSDMapStatus;
+typedef enum ObjectServiceMapStatus {
+	ObjectServiceMapStatus_Normal = 1,
+	ObjectServiceMapStatus_Starting,
+	ObjectServiceMapStatus_Updating,
+} ObjectServiceMapStatus;
 
-typedef struct OSDMap {
-	uint32_t	version;
-	OSDMapStatus	status;
-	uint32_t	node_length;
-	OSDNode		**nodes;
-	Map		nodes_map;
-	uint32_t	bset_length;
-	BSet		**bset;
-	uint16_t	replica_length;
-} OSDMap;
+typedef struct ObjectServiceMap {
+	uint32_t		version;
+	ObjectServiceMapStatus	status;
+	uint32_t		object_service_length;
+	ObjectService		**object_services;
+	Map			nodes_map;
+	uint32_t		bset_length;
+	BSet			**bset;
+	uint16_t		replica_length;
+} ObjectServiceMap;
 
 typedef enum {
-	OSDMapChangeOperation_AddOSDNode = 1,
-	OSDMapChangeOperation_RemoveOSDNode = 2,
-} OSDMapChangeOperation;
+	ObjectServiceMapChangeOperation_AddObjectService = 1,
+	ObjectServiceMapChangeOperation_RemoveObjectService = 2,
+} ObjectServiceMapChangeOperation;
 
-typedef struct OSDMapChangeLog {
-	uint32_t		from_version;
-	uint32_t		to_version;
-	OSDMapChangeOperation	operation;
-	uint32_t		from_osd_node_id;
-	uint32_t		to_osd_node_id;
-	uint32_t		moved_bset_length;
-	uint32_t		moved_bset_ids[];
-} OSDMapChangeLog;
+typedef struct ObjectServiceMapChangeLog {
+	uint32_t			from_version;
+	uint32_t			to_version;
+	ObjectServiceMapChangeOperation	operation;
+	uint32_t			from_os_node_id;
+	uint32_t			to_os_node_id;
+	uint32_t			moved_bset_length;
+	uint32_t			moved_bset_ids[];
+} ObjectServiceMapChangeLog;
 
-typedef struct ClusterGetOSDMapLatestVersionRequest {
+typedef struct ClusterGetObjectServiceMapLatestVersionRequest {
         Request         super;
-} ClusterGetOSDMapLatestVersionRequest;
+} ClusterGetObjectServiceMapLatestVersionRequest;
 
-typedef struct ClusterGetOSDMapLatestVersionResponse {
+typedef struct ClusterGetObjectServiceMapLatestVersionResponse {
         Response        super;
         uint32_t        version;
-} ClusterGetOSDMapLatestVersionResponse;
+} ClusterGetObjectServiceMapLatestVersionResponse;
 
-typedef struct ClusterGetLatestOSDMapRequest {
+typedef struct ClusterGetLatestObjectServiceMapRequest {
         Request         super;
-} ClusterGetLatestOSDMapRequest;
+} ClusterGetLatestObjectServiceMapRequest;
 
-typedef struct ClusterGetLatestOSDMapResponse {
-        Response        super;
-        OSDMap		osd_map;
-} ClusterGetLatestOSDMapResponse;
+typedef struct ClusterGetLatestObjectServiceMapResponse {
+        Response        	super;
+        ObjectServiceMap	os_map;
+} ClusterGetLatestObjectServiceMapResponse;
 
-typedef struct ClusterAddOSDNodeRequest {
+typedef struct ClusterAddObjectServiceRequest {
         Request         super;
         uint32_t	id;
         char            host[NETWORK_HOST_LEN + 1];
         int             port;
-} ClusterAddOSDNodeRequest;
+} ClusterAddObjectServiceRequest;
 
-typedef struct ClusterAddOSDNodeResponse {
+typedef struct ClusterAddObjectServiceResponse {
         Response        super;
-} ClusterAddOSDNodeResponse;
+} ClusterAddObjectServiceResponse;
 
-typedef struct ClusterRemoveOSDNodeRequest {
+typedef struct ClusterRemoveObjectServiceRequest {
         Request         super;
-        uint32_t	osd_node_id;
-} ClusterRemoveOSDNodeRequest;
+        uint32_t	os_id;
+} ClusterRemoveObjectServiceRequest;
 
-typedef struct ClusterRemoveOSDNodeResponse {
+typedef struct ClusterRemoveObjectServiceResponse {
         Response        super;
-} ClusterRemoveOSDNodeResponse;
+} ClusterRemoveObjectServiceResponse;
 
-typedef struct ClusterKeepAliveOSDRequest {
-        Request         super;
-        uint32_t	osd_node_id;
-        OSDNodeStatus	status;
-} ClusterKeepAliveOSDRequest;
+typedef struct ClusterKeepAliveObjectServiceRequest {
+        Request         	super;
+        uint32_t		os_id;
+        ObjectServiceStatus	status;
+} ClusterKeepAliveObjectServiceRequest;
 
-typedef struct ClusterKeepAliveOSDResponse {
-        Response        super;
-        uint32_t        version;
-        OSDNodeStatus	status;
-} ClusterKeepAliveOSDResponse;
+typedef struct ClusterKeepAliveObjectServiceResponse {
+        Response        	super;
+        uint32_t        	version;
+        ObjectServiceStatus	status;
+} ClusterKeepAliveObjectServiceResponse;
 
 typedef struct ClusterKeepAliveClientRequest {
         Request         super;
@@ -137,26 +137,26 @@ typedef struct ClusterKeepAliveClientResponse {
         uint32_t        version;
 } ClusterKeepAliveClientResponse;
 
-typedef struct ClusterGetOSDMapChangeLogRequest {
+typedef struct ClusterGetObjectServiceMapChangeLogRequest {
         Request         super;
         uint32_t        version;
-} ClusterGetOSDMapChangeLogRequest;
+} ClusterGetObjectServiceMapChangeLogRequest;
 
-typedef struct ClusterGetOSDMapChangeLogResponse {
-        Response        super;
-        OSDMapChangeLog	chang_log;
-} ClusterGetOSDMapChangeLogResponse;
+typedef struct ClusterGetObjectServiceMapChangeLogResponse {
+        Response        		super;
+        ObjectServiceMapChangeLog	chang_log;
+} ClusterGetObjectServiceMapChangeLogResponse;
 
 typedef struct ClusterStatusRequest {
         Request         super;
 } ClusterStatusRequest;
 
 typedef struct ClusterStatusResponse {
-        Response        super;
-        OSDMap		osd_map;
-        uint64_t	total_objects;
-        uint64_t	used;
-        uint64_t	free;
+        Response        	super;
+        ObjectServiceMap	os_map;
+        uint64_t		total_objects;
+        uint64_t		used;
+        uint64_t		free;
 } ClusterStatusResponse;
 
-#endif /* RES_CLUSTER_H_ */
+#endif /* SHARE_CLUSTER_H_ */
