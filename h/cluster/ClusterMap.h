@@ -60,6 +60,7 @@ typedef struct ClusterMapClientParam {
 	ClusterMapParam	super;
 	char		*mon_host;
 	int		mon_port;
+	uint32_t        id;
 } ClusterMapClientParam;
 
 bool initClusterMap(ClusterMap*, ClusterMapParam*);

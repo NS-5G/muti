@@ -20,7 +20,7 @@ static ServerContextExampleMethod method = {
 
 bool initServerFooContext(ServerContextExample* this, ServerContextExampleParam* param) {
         FooDaoParam sd_param;
-        int rc;
+        bool rc;
 
         this->p = NULL;
         this->m = &method;

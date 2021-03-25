@@ -34,16 +34,16 @@ typedef enum ObjectServiceStatus {
 typedef struct BSet BSet;
 
 typedef struct ObjectService {
-        uint32_t        	id;
-        ObjectServiceStatus	status;
-        char            	host[NETWORK_HOST_LEN + 1];
+        uint32_t                id;
+        ObjectServiceStatus     status;
+        char                    host[NETWORK_HOST_LEN + 1];
         int32_t         	port;
-        uint32_t		bset_length;
-        uint32_t		*bset_ids;
+        uint32_t                bset_length;
+        uint32_t                *bset_ids;
 } ObjectService;
 
 struct BSet {
-	ObjectService		**object_services;
+	ObjectService           **object_services;
 };
 
 typedef enum ObjectServiceMapStatus {
@@ -57,7 +57,7 @@ typedef struct ObjectServiceMap {
 	ObjectServiceMapStatus	status;
 	uint32_t		object_service_length;
 	ObjectService		**object_services;
-	Map			nodes_map;
+	Map			os_map;
 	uint32_t		bset_length;
 	BSet			**bset;
 	uint16_t		replica_length;
@@ -72,8 +72,8 @@ typedef struct ObjectServiceMapChangeLog {
 	uint32_t			from_version;
 	uint32_t			to_version;
 	ObjectServiceMapChangeOperation	operation;
-	uint32_t			from_os_node_id;
-	uint32_t			to_os_node_id;
+	uint32_t			from_os_id;
+	uint32_t			to_os_id;
 	uint32_t			moved_bset_length;
 	uint32_t			moved_bset_ids[];
 } ObjectServiceMapChangeLog;
