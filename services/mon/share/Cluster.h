@@ -11,6 +11,7 @@
 #include <res/Resource.h>
 #include <util/Map.h>
 #include <network/Socket.h>
+#include <cluster/ClusterMap.h>
 
 typedef enum {
 	ClusterRequestId_GetObjectServiceMapLatestVersion = 0,
@@ -22,61 +23,6 @@ typedef enum {
 	ClusterRequestId_GetObjectServiceMapChangeLog,
 	ClusterRequestId_Status,
 } ClusterRequestId;
-
-typedef enum ObjectServiceStatus {
-	ObjectServiceStatus_Online = 1,
-	ObjectServiceStatus_Starting,
-	ObjectServiceStatus_Syncing,
-	ObjectServiceStatus_Offline,
-	ObjectServiceStatus_Deleting,
-} ObjectServiceStatus;
-
-typedef struct BSet BSet;
-
-typedef struct ObjectService {
-        uint32_t                id;
-        ObjectServiceStatus     status;
-        char                    host[NETWORK_HOST_LEN + 1];
-        int32_t         	port;
-        uint32_t                bset_length;
-        uint32_t                *bset_ids;
-} ObjectService;
-
-struct BSet {
-	ObjectService           **object_services;
-};
-
-typedef enum ObjectServiceMapStatus {
-	ObjectServiceMapStatus_Normal = 1,
-	ObjectServiceMapStatus_Starting,
-	ObjectServiceMapStatus_Updating,
-} ObjectServiceMapStatus;
-
-typedef struct ObjectServiceMap {
-	uint32_t		version;
-	ObjectServiceMapStatus	status;
-	uint32_t		object_service_length;
-	ObjectService		**object_services;
-	Map			os_map;
-	uint32_t		bset_length;
-	BSet			**bset;
-	uint16_t		replica_length;
-} ObjectServiceMap;
-
-typedef enum {
-	ObjectServiceMapChangeOperation_AddObjectService = 1,
-	ObjectServiceMapChangeOperation_RemoveObjectService = 2,
-} ObjectServiceMapChangeOperation;
-
-typedef struct ObjectServiceMapChangeLog {
-	uint32_t			from_version;
-	uint32_t			to_version;
-	ObjectServiceMapChangeOperation	operation;
-	uint32_t			from_os_id;
-	uint32_t			to_os_id;
-	uint32_t			moved_bset_length;
-	uint32_t			moved_bset_ids[];
-} ObjectServiceMapChangeLog;
 
 typedef struct ClusterGetObjectServiceMapLatestVersionRequest {
         Request         super;

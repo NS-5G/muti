@@ -9,36 +9,75 @@
 #define CLUSTER_CLUSTERMAP_H_
 #include <stdbool.h>
 #include <network/Socket.h>
+#include <util/Map.h>
 
-typedef enum OSDNodeStatus {
-	OSDNodeStatus_Online,
-	OSDNodeStatus_SyncOut,
-	OSDNodeStatus_SyncIn,
-	OSDNodeStatus_Offline
-} OSDNodeStatus;
+typedef enum ObjectServiceStatus {
+	ObjectServiceStatus_Online = 1,
+	ObjectServiceStatus_Syncing,
+	ObjectServiceStatus_Offline,
+	ObjectServiceStatus_Deleting,
+} ObjectServiceStatus;
 
-typedef struct OSDNode {
-        uint32_t        id;
-        OSDNodeStatus	status;
-        char            host[NETWORK_HOST_LEN + 1];
-        int             port;
-        void		*user_define;
-} OSDNode;
+typedef struct BSet BSet;
 
-typedef struct BSet {
-	uint32_t	id;
-	OSDNode		*replicas[];
-} Bset;
+typedef struct ObjectService {
+        uint32_t                id;
+        ObjectServiceStatus     status;
+        char                    host[NETWORK_HOST_LEN + 1];
+        int32_t         	port;
+        uint32_t                bset_length;
+        uint32_t                *bset_ids;
+        void			*user_define;
+} ObjectService;
+
+struct BSet {
+	uint32_t                id;
+	ObjectService           **object_services;
+};
+
+typedef enum ObjectServiceMapStatus {
+	ObjectServiceMapStatus_Normal = 1,
+	ObjectServiceMapStatus_Updating,
+} ObjectServiceMapStatus;
+
+typedef struct ObjectServiceMap {
+	uint32_t		version;
+	ObjectServiceMapStatus	status;
+	uint32_t		object_service_length;
+	ObjectService		**object_services;
+	Map			os_map;
+	uint32_t		bset_length;
+	BSet			**bset;
+	uint16_t		replica_length;
+} ObjectServiceMap;
+
+typedef enum {
+	ObjectServiceMapChangeOperation_AddObjectService = 1,
+	ObjectServiceMapChangeOperation_RemoveObjectService = 2,
+} ObjectServiceMapChangeOperation;
+
+typedef struct ObjectServiceMapChangeLog {
+	uint32_t			from_version;
+	uint32_t			to_version;
+	ObjectServiceMapChangeOperation	operation;
+	uint32_t			from_os_id;
+	uint32_t			to_os_id;
+	uint32_t			moved_bset_length;
+	uint32_t			moved_bset_ids[];
+} ObjectServiceMapChangeLog;
 
 typedef enum ClusterMapType {
-	ClusterMapType_MON,
-	ClusterMapType_Client
+	ClusterMapType_Mon,
+	ClusterMapType_Client,
+	ClusterMapType_ObjectService,
 } ClusterMapType;
 
 typedef struct ClusterMap ClusterMap;
 typedef struct ClusterMapMethod {
-	uint16_t	(*getBSetReplicaLength)(ClusterMap*);
-        void    	(*destroy)(ClusterMap*);
+	int			(*RemoveObjectService)(ClusterMap*, uint32_t);
+	int			(*AddObjectService)(ClusterMap*, ObjectService*);
+	ObjectServiceMap* 	(*getObjectServiceMap)(ClusterMap*);
+        void    		(*destroy)(ClusterMap*);
 } ClusterMapMethod;
 
 struct ClusterMap {
@@ -48,20 +87,27 @@ struct ClusterMap {
 
 typedef struct ClusterMapParam {
 	ClusterMapType	type;
-	uint16_t	bset_replica_length;
 } ClusterMapParam;
 
 typedef struct ClusterMapMonParam {
 	ClusterMapParam	super;
-	char		*path;
+	char		init_path[1024];
 } ClusterMapMonParam;
 
 typedef struct ClusterMapClientParam {
 	ClusterMapParam	super;
-	char		*mon_host;
+	char		mon_host[NETWORK_HOST_LEN + 1];
 	int		mon_port;
-	uint32_t        id;
 } ClusterMapClientParam;
+
+typedef struct ClusterMapObjectServiceParam {
+	ClusterMapParam	super;
+	char		mon_host[NETWORK_HOST_LEN + 1];
+	int		mon_port;
+	uint32_t	object_service_id;
+	void		*context;
+	void		(*cluster_map_upgrade)(ObjectServiceMap*, ObjectServiceMapChangeLog*, void*);
+} ClusterMapObjectServiceParam;
 
 bool initClusterMap(ClusterMap*, ClusterMapParam*);
 

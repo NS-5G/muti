@@ -11,7 +11,7 @@
 #include <mon/server/cluster/ClusterHandler.h>
 #include "../share/MonResources.h"
 
-static RequestHandler ExampleHandlers[] = {
+static RequestHandler MonHandlers[] = {
                 {ResourceIdCluster, ClusterActions, ClusterRequestDecoder, ClusterResponseEncoder},
 };
 
