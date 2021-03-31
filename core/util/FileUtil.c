@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <assert.h>
 
 #include <util/FileUtil.h>
 
@@ -65,7 +66,7 @@ static void sysWrite(int fd, char *buf, ssize_t len)
         }
 }
 
-bool fileUtilWriteAFile(char *path, char *buffer, size_t buf_len) {
+bool fileUtilWriteAFile(char *path, char *buffer, ssize_t buf_len) {
         int fd;
         fd = open(path, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU|S_IRGRP|S_IROTH);
         if (fd < 0) {
