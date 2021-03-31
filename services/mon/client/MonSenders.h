@@ -14,4 +14,4 @@ static RequestSender MonSenders[] = {
                 {ResourceIdCluster, ClusterRequestEncoder, ClusterResponseDecoder},
 };
 
-#endif /* CLIENT_SENDER_REQUESTSENDERS_H_ */
+#endif /* CLIENT_SENDER_MONSENDERS_H_ */

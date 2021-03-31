@@ -24,7 +24,7 @@ static void destroy(ClusterMap* obj) {
 }
 
 static ClusterMapMethod method = {
-	.getObjectServiceMap = ClusterMapGetObjectServiceMap,
+	.getObjectServiceMap = clusterMapGetObjectServiceMap,
         .destroy = destroy,
 };
 

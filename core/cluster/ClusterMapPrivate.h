@@ -18,6 +18,8 @@ extern bool initClusterMapMon(ClusterMap* obj, ClusterMapParam* param);
 extern bool initClusterMapClient(ClusterMap* obj, ClusterMapParam* param);
 extern bool initClusterMapObjectService(ClusterMap* obj, ClusterMapParam* param);
 
-extern ObjectServiceMap* ClusterMapGetObjectServiceMap(ClusterMap* obj);
+extern ObjectServiceMap* clusterMapGetObjectServiceMap(ClusterMap* obj);
+extern bool clusterMapBinDump(ObjectServiceMap *os_map,  char **buffer, ssize_t *buf_len);
+extern bool clusterMapBinParse(ObjectServiceMap *os_map,  char *buffer, ssize_t buf_len);
 
 #endif /* CLUSTER_CLUSTERMAPPRIVATE_H_ */

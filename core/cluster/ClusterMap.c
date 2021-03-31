@@ -14,7 +14,17 @@
 #include <cluster/ClusterMap.h>
 #include "ClusterMapPrivate.h"
 
-ObjectServiceMap* ClusterMapGetObjectServiceMap(ClusterMap* obj) {
+bool clusterMapBinDump(ObjectServiceMap *os_map,  char **buffer, ssize_t *buf_len) {
+        // TODO
+        return true;
+}
+
+bool clusterMapBinParse(ObjectServiceMap *os_map,  char *buffer, ssize_t buf_len) {
+        // TODO
+        return true;
+}
+
+ObjectServiceMap* clusterMapGetObjectServiceMap(ClusterMap* obj) {
 	ClusterMapPrivate *priv_p = obj->p;
 
 	return &priv_p->os_map;
