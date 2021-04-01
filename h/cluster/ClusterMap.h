@@ -48,7 +48,7 @@ typedef struct ObjectServiceMap {
 	Map			os_map;
 	uint32_t		bset_length;
 	BSet			**bset;
-	uint16_t		replica_length;
+	uint16_t		bset_replica_size;
 } ObjectServiceMap;
 
 typedef enum {

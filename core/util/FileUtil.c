@@ -45,7 +45,7 @@ bool fileUtilReadAFile(char *path, char **buffer, ssize_t *buf_len) {
         }
         assert(fstat(fd, &st) == 0);
         *buf_len = st.st_size;
-        *buffer = malloc(*buf_len);
+        *buffer = malloc(*buf_len + 1);
         sysRead(fd, *buffer, *buf_len);
         close(fd);
         return true;
