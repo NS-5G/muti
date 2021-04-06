@@ -32,7 +32,7 @@ typedef struct ObjectService {
 
 struct BSet {
 	uint32_t                id;
-	ObjectService           **object_services;
+	uint32_t                *object_service_ids;
 };
 
 typedef enum ObjectServiceMapStatus {
@@ -47,7 +47,7 @@ typedef struct ObjectServiceMap {
 	ObjectService		**object_services;
 	Map			os_map;
 	uint32_t		bset_length;
-	BSet			**bset;
+	BSet			*bset;
 	uint16_t		bset_replica_size;
 } ObjectServiceMap;
 

@@ -35,6 +35,39 @@ static uint64_t osInt32Hash(void *key) {
 }
 
 static void cmmFillBSets(ObjectServiceMap *os_map) {
+        uint32_t total_bset_num = os_map->bset_length * os_map->bset_replica_size;
+        uint32_t avg_bset_num = total_bset_num / os_map->object_service_length;
+        avg_bset_num = avg_bset_num * os_map->object_service_length == total_bset_num ? avg_bset_num : (avg_bset_num + 1);
+        uint32_t i, j, k, l;
+        ObjectService *os;
+        BSet *bset;
+
+        os_map->bset = malloc(sizeof(os_map->bset_length * sizeof(BSet)));
+        for (i = 0; i < os_map->bset_length; i++) {
+                bset = &os_map->bset[i];
+                bset->id = i;
+                bset->object_service_ids = malloc(sizeof(uint32_t) * os_map->bset_replica_size);
+        }
+
+        for (k = 0; k < os_map->object_service_length; k++) {
+                os = os_map->object_services[k];
+                os->bset_ids = malloc(sizeof(uint32_t) * avg_bset_num);
+                os->bset_length = 0;
+                os->user_define = NULL;
+        }
+
+        for (j = 0; j < os_map->bset_replica_size; j++) {
+                for (i = 0; i < os_map->bset_length; i++) {
+                        l = (j + i) % os_map->bset_length;
+                        k = l % os_map->object_service_length;
+                        os = os_map->object_services[k];
+                        os->bset_ids[os->bset_length++] = l;
+                        assert(os->bset_length <= avg_bset_num);
+                        bset = &os_map->bset[l];
+                        bset->object_service_ids[j] = os->id;
+                }
+        }
+
 
 }
 
@@ -77,6 +110,7 @@ static bool cmmParseClusterMap(ObjectServiceMap *os_map, char *buffer, ssize_t b
         os_map->object_service_length = cJSON_GetArraySize(js_object_services);
         os_map->object_services = malloc(sizeof(void*) * os_map->object_service_length);
         os_map->status = ObjectServiceMapStatus_Updating;
+        os_map->version = 0;
 
         MapHashLinkedParam mparam;
         mparam.super.compareMethod = osInt32KeyCompare;
