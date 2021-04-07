@@ -44,7 +44,7 @@ typedef struct ObjectServiceMap {
 	uint32_t		version;
 	ObjectServiceMapStatus	status;
 	uint32_t		object_service_length;
-	ObjectService		**object_services;
+	ObjectService		*object_services;
 	Map			os_map;
 	uint32_t		bset_length;
 	BSet			*bset;

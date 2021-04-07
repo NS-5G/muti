@@ -26,14 +26,6 @@ typedef struct ClusterMapMonPrivate {
 	ClusterMapMonParam	param;
 } ClusterMapMonPrivate;
 
-static int osInt32KeyCompare(void *key, void *key1) {
-        return *(uint32_t *)key - *(uint32_t *)key1;
-}
-
-static uint64_t osInt32Hash(void *key) {
-        return (uint64_t)*(uint32_t *)key;
-}
-
 static void cmmFillBSets(ObjectServiceMap *os_map) {
         uint32_t total_bset_num = os_map->bset_length * os_map->bset_replica_size;
         uint32_t avg_bset_num = total_bset_num / os_map->object_service_length;
@@ -50,7 +42,7 @@ static void cmmFillBSets(ObjectServiceMap *os_map) {
         }
 
         for (k = 0; k < os_map->object_service_length; k++) {
-                os = os_map->object_services[k];
+                os = &os_map->object_services[k];
                 os->bset_ids = malloc(sizeof(uint32_t) * avg_bset_num);
                 os->bset_length = 0;
                 os->user_define = NULL;
@@ -60,7 +52,7 @@ static void cmmFillBSets(ObjectServiceMap *os_map) {
                 for (i = 0; i < os_map->bset_length; i++) {
                         l = (j + i) % os_map->bset_length;
                         k = l % os_map->object_service_length;
-                        os = os_map->object_services[k];
+                        os = &os_map->object_services[k];
                         os->bset_ids[os->bset_length++] = l;
                         assert(os->bset_length <= avg_bset_num);
                         bset = &os_map->bset[l];
@@ -85,7 +77,7 @@ static void cmmFillBSets(ObjectServiceMap *os_map) {
  */
 static bool cmmParseClusterMap(ObjectServiceMap *os_map, char *buffer, ssize_t buf_len) {
         bool rc = true;
-        uint32_t i, j;
+        uint32_t i;
 
         buffer[buf_len] = '\0';
 
@@ -108,21 +100,15 @@ static bool cmmParseClusterMap(ObjectServiceMap *os_map, char *buffer, ssize_t b
 
         cJSON *js_object_services = cJSON_GetObjectItem(root, "object_services");
         os_map->object_service_length = cJSON_GetArraySize(js_object_services);
-        os_map->object_services = malloc(sizeof(void*) * os_map->object_service_length);
+        os_map->object_services = malloc(sizeof(ObjectService) * os_map->object_service_length);
         os_map->status = ObjectServiceMapStatus_Updating;
         os_map->version = 0;
 
-        MapHashLinkedParam mparam;
-        mparam.super.compareMethod = osInt32KeyCompare;
-        mparam.hashMethod = osInt32Hash;
-        mparam.keyOffsetInValue = (long)(&((struct ObjectService *)0)->id);
-        mparam.slot_size = os_map->object_service_length;
-        initMapHashLinked(&os_map->os_map, &mparam);
+        clusterMapInitOSMap(os_map);
 
         for (i = 0; i < os_map->object_service_length; i++) {
                 cJSON *js_os = cJSON_GetArrayItem(js_object_services, i);
-                ObjectService *os = malloc(sizeof(*os));
-                os_map->object_services[i] = os;
+                ObjectService *os = &os_map->object_services[i];
 
                 cJSON *js_id = cJSON_GetObjectItem(js_os, "id");
                 cJSON *js_host = cJSON_GetObjectItem(js_os, "host");
@@ -154,10 +140,7 @@ out:
         cJSON_Delete(root);
         return rc;
 out1:
-        for (j = 0; j<=i; j++) {
-                free(os_map->object_services[j]);
-                free(os_map->object_services);
-        }
+        free(os_map->object_services);
         os_map->os_map.m->destroy(&os_map->os_map);
         cJSON_Delete(root);
         return rc;
