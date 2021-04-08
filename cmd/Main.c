@@ -4,7 +4,6 @@
 #include <time.h>
 #include <string.h>
 
-#include "Pool.h"
 #include "Service.h"
 #include "Stat.h"
 #include "Storage.h"
@@ -20,8 +19,7 @@ typedef struct Command {
 
 Command MutiCmds[] = {
 	{"ut", UtDo, "Do internal unit tests, only for develop person."},
-	{"service", ServiceDo, "Start all kinds of services(OSD, MDS, MON ...)."},
-	{"pool", PoolDo, "Pool related operations(create, list, destroy ...)."},
+	{"service", ServiceDo, "Start all kinds of services(OS, MDS, MON ...)."},
 	{"storage", StorageDo, "Storage related operations(put, get, delete ...)."},
 	{"stat", StatDo, "Statistic related operations(Cluster, nodes ...)."},
 	{(char *)NULL, (CommandFn)NULL, (char*)NULL}
