@@ -8,14 +8,7 @@
 #include "Stat.h"
 #include "Storage.h"
 #include "Ut.h"
-
-typedef int(*CommandFn)(int argv, char **argvs);
-
-typedef struct Command {
-	char		*name;
-	CommandFn	cmd;
-	char		*desc;
-} Command;
+#include "Main.h"
 
 Command MutiCmds[] = {
 	{"ut", UtDo, "Do internal unit tests, only for develop person."},
@@ -25,11 +18,11 @@ Command MutiCmds[] = {
 	{(char *)NULL, (CommandFn)NULL, (char*)NULL}
 };
 
-Command *findCommand(char *cnm) {
+Command *findCommand(Command *cmds, char *cnm) {
         int i = 0;
-        while (MutiCmds[i].name != NULL) {
-                if (strcasecmp(MutiCmds[i].name, cnm) == 0) {
-                        return &MutiCmds[i];
+        while (cmds[i].name != NULL) {
+                if (strcasecmp(cmds[i].name, cnm) == 0) {
+                        return &cmds[i];
                 }
                 i ++;
         }
@@ -41,7 +34,7 @@ int main(int argv, char **argvs) {
         int i = 0, j, maxlen;
 
         if (argv > 1) {
-        	Command *tcase = findCommand(argvs[1]);
+        	Command *tcase = findCommand(MutiCmds, argvs[1]);
 		if (tcase != NULL) {
 			ret = (*tcase->cmd)(argv, argvs);
 		} else {

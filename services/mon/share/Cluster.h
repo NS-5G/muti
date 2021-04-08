@@ -22,6 +22,7 @@ typedef enum {
 	ClusterRequestId_KeepAliveClient,
 	ClusterRequestId_GetObjectServiceMapChangeLog,
 	ClusterRequestId_Status,
+	ClusterRequestId_Stop,
 } ClusterRequestId;
 
 typedef struct ClusterGetObjectServiceMapLatestVersionRequest {
@@ -104,5 +105,13 @@ typedef struct ClusterStatusResponse {
         uint64_t		used;
         uint64_t		free;
 } ClusterStatusResponse;
+
+typedef struct ClusterStopRequest {
+        Request         super;
+} ClusterStopRequest;
+
+typedef struct ClusterStopResponse {
+        Response        super;
+} ClusterStopResponse;
 
 #endif /* SHARE_CLUSTER_H_ */

@@ -24,6 +24,7 @@ Action ClusterActions[] = {
         ClusterActionKeepAliveClient,
         ClusterActionGetObjectServiceMapChangeLog,
         ClusterActionStatus,
+	ClusterActionStop,
 };
 
 void ClusterActionGetObjectServiceMapLatestVersion(SRequest *req) {
@@ -58,6 +59,10 @@ void ClusterActionStatus(SRequest *req) {
 
 }
 
+void ClusterActionStop(SRequest *req) {
+
+}
+
 RequestDecoder ClusterRequestDecoder[] = {
         ClusterRequestDecoderGetObjectServiceMapLatestVersion,
         ClusterRequestDecoderGetLatestObjectServiceMap,
@@ -67,6 +72,7 @@ RequestDecoder ClusterRequestDecoder[] = {
         ClusterRequestDecoderKeepAliveClient,
         ClusterRequestDecoderGetObjectServiceMapChangeLog,
         ClusterRequestDecoderStatus,
+	ClusterRequestDecoderStop,
 };
 
 Request* ClusterRequestDecoderGetObjectServiceMapLatestVersion(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
@@ -100,6 +106,10 @@ Request* ClusterRequestDecoderStatus(char *buffer, size_t buff_len, size_t *cons
         return NULL;
 }
 
+Request* ClusterRequestDecoderStop(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
+        return NULL;
+}
+
 ResponseEncoder ClusterResponseEncoder[] = {
         ClusterResponseEncoderGetObjectServiceMapLatestVersion,
         ClusterResponseEncoderGetLatestObjectServiceMap,
@@ -109,6 +119,7 @@ ResponseEncoder ClusterResponseEncoder[] = {
         ClusterResponseEncoderKeepAliveClient,
         ClusterResponseEncoderGetObjectServiceMapChangeLog,
         ClusterResponseEncoderStatus,
+	ClusterResponseEncoderStop,
 };
 
 bool ClusterResponseEncoderGetObjectServiceMapLatestVersion(Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
@@ -143,5 +154,8 @@ bool ClusterResponseEncoderStatus(Response *resp, char **buffer, size_t *buff_le
         return true;
 }
 
+bool ClusterResponseEncoderStop(Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
+        return true;
+}
 
 

@@ -9,8 +9,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <cluster/ClusterMap.h>
 
 static void destroy(ServerContextMon* this) {
+	ClusterMap *cmap = &this->clusterMap;
+	cmap->m->destroy(cmap);
 }
 
 static ServerContextMonMethod method = {
@@ -23,6 +26,12 @@ bool initServerMonContext(ServerContextMon* this, ServerContextMonParam* param) 
         this->p = NULL;
         this->m = &method;
 
+        ClusterMapMonParam cmap_mon_param;
+        cmap_mon_param.super.type = ClusterMapType_Mon;
+        strcpy(cmap_mon_param.init_path, param->cmap_init_path);
+
+        rc = initClusterMap(&this->clusterMap, &cmap_mon_param.super);
+        sem_init(&this->stop_sem, 0, 0);
         return rc;
 }
 

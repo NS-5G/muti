@@ -8,6 +8,8 @@
 #ifndef MON_SERVERMONCONTEXT_H_
 #define MON_SERVERMONCONTEXT_H_
 #include <stdbool.h>
+#include <semaphore.h>
+#include <cluster/ClusterMap.h>
 
 typedef struct ServerContextMon ServerContextMon;
 typedef struct ServerContextMonMethod {
@@ -15,12 +17,14 @@ typedef struct ServerContextMonMethod {
 } ServerContextMonMethod;
 
 struct ServerContextMon {
-        void                            *p;
+        void                        *p;
         ServerContextMonMethod      *m;
+        ClusterMap			clusterMap;
+        sem_t				stop_sem;
 };
 
 typedef struct ServerContextMonParam {
-
+	char		cmap_init_path[1024];
 } ServerContextMonParam;
 
 bool initServerMonContext(ServerContextMon*, ServerContextMonParam*);

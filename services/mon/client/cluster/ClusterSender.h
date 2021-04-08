@@ -18,6 +18,7 @@ extern Response* ClusterResponseDecoderKeepAliveObjectService(char *buffer, size
 extern Response* ClusterResponseDecoderKeepAliveClient(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req);
 extern Response* ClusterResponseDecoderGetObjectServiceMapChangeLog(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req);
 extern Response* ClusterResponseDecoderStatus(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req);
+extern Response* ClusterResponseDecoderStop(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req);
 
 extern ResponseDecoder ClusterResponseDecoder[];
 
@@ -29,6 +30,7 @@ bool ClusterRequestEncoderKeepAliveObjectService(Request *resp, char **buffer, s
 bool ClusterRequestEncoderKeepAliveClient(Request *resp, char **buffer, size_t *buff_len, bool *free_resp);
 bool ClusterRequestEncoderGetObjectServiceMapChangeLog(Request *resp, char **buffer, size_t *buff_len, bool *free_resp);
 bool ClusterRequestEncoderStatus(Request *resp, char **buffer, size_t *buff_len, bool *free_resp);
+bool ClusterRequestEncoderStop(Request *resp, char **buffer, size_t *buff_len, bool *free_resp);
 
 extern RequestEncoder ClusterRequestEncoder[];
 

@@ -340,6 +340,32 @@ static bool clientSendRequest(Client* this, Request* req, ClientSendCallback cal
         return rc;
 }
 
+typedef struct ClientSendReqSyncCbarg {
+	sem_t  sem;
+	int8_t error_id;
+} ClientSendReqSyncCbarg;
+
+static void clientSendRequestSyncCallbck(Client *this, Response *resp, void *p) {
+	ClientSendReqSyncCbarg *cbargp = p;
+	cbargp->error_id = resp->error_id;
+	sem_post(&cbargp->sem);
+}
+
+static bool clientSendRequestSync(Client* this, Request* req) {
+	ClientSendReqSyncCbarg cbarg;
+	bool free_req;
+
+	sem_init(&cbarg.sem, 0, 0);
+	bool rc = clientSendRequest(this, req, clientSendRequestSyncCallbck, &cbarg, &free_req);
+	if (rc == true) sem_wait(&cbarg.sem);
+	else return rc;
+	rc = cbarg.error_id == 0;
+	if (rc == false) {
+		ELOG("Request %d got error, error id:%d", req->resource_id, cbarg.error_id);
+	}
+	return rc;
+}
+
 static void destroy(Client* this) {
         ClientPrivate *priv_p = this->p;
         int i;
@@ -356,6 +382,7 @@ static void destroy(Client* this) {
 
 static ClientMethod method = {
         .sendRequest = clientSendRequest,
+	.sendRequestSync = clientSendRequestSync,
         .destroy = destroy,
 };
 
