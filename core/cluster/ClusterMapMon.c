@@ -83,7 +83,7 @@ static bool cmmParseClusterMap(ObjectServiceMap *os_map, char *buffer, ssize_t b
 
         cJSON *root = cJSON_Parse(buffer);
         if (root == NULL) {
-                ELOG("Parse json string failed.");
+                ELOG("Parse json string failed:\n%s", buffer);
                 rc = false;
                 return rc;
         }
@@ -171,10 +171,16 @@ bool initClusterMapMon(ClusterMap* obj, ClusterMapParam* param) {
 	
 	rc = fileUtilReadAFile(MON_OBJECT_SERVICE_MAP_BIN_PATH, &buffer, &buf_len);
 	if (rc == false) {
+		ELOG("Read file %s failed, try read init file %s.",
+			MON_OBJECT_SERVICE_MAP_BIN_PATH, mparam->init_path);
 	        rc = fileUtilReadAFile(mparam->init_path, &buffer, &buf_len);
-	        if (rc == false) return rc;
+	        if (rc == false) {
+	        	ELOG("Read file %s failed.", mparam->init_path);
+	        	return rc;
+	        }
 	        rc = cmmParseClusterMap(&priv->super.os_map, buffer, buf_len);
 	        if (rc == false) {
+	        	ELOG("cmmParseClusterMap parse file %s failed.", mparam->init_path);
 	                free(buffer);
 	                return rc;
 	        }
