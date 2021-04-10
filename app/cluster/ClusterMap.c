@@ -12,6 +12,7 @@
 #include <assert.h>
 
 #include <cluster/ClusterMap.h>
+
 #include "ClusterMapPrivate.h"
 
 static int osInt32KeyCompare(void *key, void *key1) {
@@ -27,7 +28,12 @@ void clusterMapInitOSMap(ObjectServiceMap *os_map) {
         mparam.super.compareMethod = osInt32KeyCompare;
         mparam.hashMethod = osInt32Hash;
         mparam.keyOffsetInValue = (long)(&((struct ObjectService *)0)->id);
-        mparam.slot_size = os_map->object_service_length;
+        size_t ssize = 0, i = 1;
+        while (ssize < os_map->object_service_length) {
+                ssize = 1 << i;
+                i++;
+        }
+        mparam.slot_size = ssize;
         initMapHashLinked(&os_map->os_map, &mparam);
 }
 
@@ -43,6 +49,7 @@ bool clusterMapBinDump(ObjectServiceMap *os_map,  char **buffer, ssize_t *buf_le
                 total_len += os->bset_length * 4;
         }
         buf = malloc(total_len);
+        *buffer = buf;
 
         *(uint32_t*)buf = os_map->version;
         buf += 4; len += 4;
@@ -90,7 +97,6 @@ bool clusterMapBinDump(ObjectServiceMap *os_map,  char **buffer, ssize_t *buf_le
         }
 
         assert(len == total_len);
-        *buffer = buf;
         *buf_len = len;
         return true;
 }

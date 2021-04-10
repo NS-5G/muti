@@ -15,9 +15,9 @@
 #include <cluster/ClusterMap.h>
 #include <util/FileUtil.h>
 #include <Log.h>
-#include "ClusterMapPrivate.h"
 #include <util/cJSON.h>
 #include <util/Map.h>
+#include "ClusterMapPrivate.h"
 
 #define MON_OBJECT_SERVICE_MAP_BIN_PATH "./mon_object_service_map.bin"
 
@@ -34,7 +34,7 @@ static void cmmFillBSets(ObjectServiceMap *os_map) {
         ObjectService *os;
         BSet *bset;
 
-        os_map->bset = malloc(sizeof(os_map->bset_length * sizeof(BSet)));
+        os_map->bset = malloc(os_map->bset_length * sizeof(BSet));
         for (i = 0; i < os_map->bset_length; i++) {
                 bset = &os_map->bset[i];
                 bset->id = i;

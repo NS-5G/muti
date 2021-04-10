@@ -10,15 +10,16 @@
 #include <string.h>
 
 #include <cluster/ClusterMap.h>
+
 #include "ClusterMapPrivate.h"
 
-typedef struct ClusterMapClientPrivate {
-	ClusterMapPrivate	super;
-	ClusterMapClientParam	param;
-} ClusterMapClientPrivate;
+typedef struct ClusterMapObjectServicePrivate {
+	ClusterMapPrivate		super;
+	ClusterMapObjectServiceParam	param;
+} ClusterMapObjectServicePrivate;
 
 static void destroy(ClusterMap* obj) {
-	ClusterMapClientPrivate *priv = obj->p;
+	ClusterMapObjectServicePrivate *priv = obj->p;
 	
 	free(priv);
 }
@@ -28,9 +29,9 @@ static ClusterMapMethod method = {
         .destroy = destroy,
 };
 
-bool initClusterMapClient(ClusterMap* obj, ClusterMapParam* param) {
-	ClusterMapClientPrivate *priv = malloc(sizeof(*priv));
-	ClusterMapClientParam *mparam = (ClusterMapClientParam*)param;
+bool initClusterMapObjectService(ClusterMap* obj, ClusterMapParam* param) {
+	ClusterMapObjectServicePrivate *priv = malloc(sizeof(*priv));
+	ClusterMapObjectServiceParam *mparam = (ClusterMapObjectServiceParam*)param;
 
 	obj->p = priv;
 	obj->m = &method;

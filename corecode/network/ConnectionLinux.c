@@ -7,6 +7,8 @@
 
 
 
+#include "../../corecode/network/ConnectionLinux.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,7 +18,6 @@
 #include "Object.h"
 #include "network/Connection.h"
 #include "Log.h"
-#include "ConnectionLinux.h"
 
 #if defined(WIN32) || defined(WIN64)
 #else

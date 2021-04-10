@@ -149,7 +149,7 @@ bool initMapHashLinked(Map* this, MapHashLinkedParam* param) {
 
         if ((param->slot_size & (param->slot_size-1)) != 0) {
                 /*Slot size must be 2^n*/
-                printf("Slot size must be 2^n\n");
+                printf("Slot size must be 2^n size:%ld\n", param->slot_size);
                 exit(-1);
         }
         this->p = priv;
