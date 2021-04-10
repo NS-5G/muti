@@ -7,7 +7,7 @@
 
 
 
-#include "../../corecode/network/ConnectionLinux.h"
+#include "ConnectionLinux.h"
 
 #include <stdio.h>
 #include <stdlib.h>

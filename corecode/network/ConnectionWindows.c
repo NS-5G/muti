@@ -7,7 +7,7 @@
 
 
 
-#include "../../corecode/network/ConnectionWindows.h"
+#include "ConnectionWindows.h"
 
 #include <stdio.h>
 #include <stdlib.h>

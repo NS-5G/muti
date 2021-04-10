@@ -56,7 +56,7 @@ bool initSocketLinux(Socket* obj, SocketLinuxParam* param) {
 #include <assert.h>
 #include <signal.h>
 
-#include "../../corecode/network/ConnectionLinux.h"
+#include "ConnectionLinux.h"
 #include "Log.h"
 
 //#define DLOG_SOCKET(str, args...) DLOG(str, ##args)

@@ -24,6 +24,7 @@ typedef struct Request {
 
 typedef struct Readbuffer {
         char                    *buffer;
+        off_t                   processed_buffer_start;
         off_t                   read_buffer_start;
         volatile uint32_t       reference;
 } Readbuffer;

@@ -41,8 +41,20 @@ static Readbuffer* serverCreateReadBuffer(ServerPrivate *priv_p) {
 
         rbuf->buffer = malloc(priv_p->param.read_buffer_size);
         rbuf->read_buffer_start = 0;
-        rbuf->reference = 0;
+        rbuf->processed_buffer_start = 0;
+        rbuf->reference = 1;
         return rbuf;
+}
+
+static inline void serverReadDone(Connection *conn_p);
+
+static inline void serverFreeReadBuffer(Readbuffer *rbuf, Connection* conn_p) {
+        uint64_t left = __sync_sub_and_fetch(&rbuf->reference, 1);
+        if (left == 0) {
+                free(rbuf->buffer);
+                free(rbuf);
+                serverReadDone(conn_p);
+        }
 }
 
 static inline void serverReadDone(Connection *conn_p) {
@@ -60,9 +72,7 @@ static inline void serverReadDone(Connection *conn_p) {
                                         priv_p->param.read_buffer_size - rbuf->read_buffer_start,
                                         serverReadCallback, rbuf);
                         if (rc == false) {
-                                free(rbuf->buffer);
-                                free(rbuf);
-                                __sync_sub_and_fetch(&ccxt->read_counter, 1);
+                                serverFreeReadBuffer(rbuf, conn_p);
                         }
                         ccxt->to_read_buf = NULL;
                 }
@@ -109,12 +119,8 @@ static void serverDoActionCallback(SRequest *reqw) {
         if (reqw->free_req) {
                 free(reqw->request);
         }
-        uint32_t left = __sync_sub_and_fetch(&reqw->read_buffer->reference, 1);
-        if (left == 0) {
-                free(reqw->read_buffer->buffer);
-                free(reqw->read_buffer);
-                serverReadDone(conn_p);
-        }
+
+        serverFreeReadBuffer(reqw->read_buffer, conn_p);
         free(reqw);
 }
 
@@ -125,27 +131,38 @@ static void serverDoAction(Job *job) {
         handler->actions[reqw->request->request_id](reqw);
 }
 
-static inline void serverRead(Connection* conn_p, ServerPrivate *priv_p, char *buf, size_t buf_len) {
+static inline void serverRead(Connection* conn_p, ServerPrivate *priv_p, Readbuffer *old_rbuf, char *buf, size_t buf_len) {
         SConnectionContext *ccxt = conn_p->m->getContext(conn_p);
-        Readbuffer *rbuf = serverCreateReadBuffer(priv_p);
-        memcpy(rbuf->buffer, buf, buf_len);
-        rbuf->read_buffer_start = buf_len;
+        Readbuffer *rbuf;
+        uint64_t left;
 
-        uint64_t left = __sync_add_and_fetch(&ccxt->read_counter, 1);
-        if (left == priv_p->param.max_read_buffer_counter) {
-                pthread_mutex_lock(&ccxt->to_read_buf_lock);
-                assert(ccxt->to_read_buf == NULL);
-                ccxt->to_read_buf = rbuf;
-                pthread_mutex_unlock(&ccxt->to_read_buf_lock);
-                return;
+        if (old_rbuf->processed_buffer_start + buf_len < priv_p->param.read_buffer_size) {
+                rbuf = old_rbuf;
+                rbuf->read_buffer_start = old_rbuf->processed_buffer_start + buf_len;
+        } else {
+
+                rbuf = serverCreateReadBuffer(priv_p);
+                memcpy(rbuf->buffer, buf, buf_len);
+                rbuf->read_buffer_start = buf_len;
+
+                serverFreeReadBuffer(old_rbuf, conn_p);
+
+                left = __sync_add_and_fetch(&ccxt->read_counter, 1);
+                if (left == priv_p->param.max_read_buffer_counter) {
+                        pthread_mutex_lock(&ccxt->to_read_buf_lock);
+                        assert(ccxt->to_read_buf == NULL);
+                        ccxt->to_read_buf = rbuf;
+                        pthread_mutex_unlock(&ccxt->to_read_buf_lock);
+                        return;
+                }
         }
+
         bool rc = conn_p->m->read(conn_p, rbuf->buffer + rbuf->read_buffer_start,
                         priv_p->param.read_buffer_size - rbuf->read_buffer_start,
                         serverReadCallback, rbuf);
         if (rc == false) {
-                free(rbuf->buffer);
-                free(rbuf);
-                __sync_sub_and_fetch(&ccxt->read_counter, 1);
+                serverFreeReadBuffer(rbuf, conn_p);
+                serverFreeReadBuffer(rbuf, conn_p);
         }
 }
 
@@ -159,22 +176,19 @@ static void serverReadCallback(Connection* conn_p, bool rc, void* buffer, size_t
         uint16_t request_id;
         char *buf;
         size_t buf_len;
-        uint32_t left;
 
         if (rc == false) {
-                free(rbuf->buffer);
-                free(rbuf);
-                __sync_sub_and_fetch(&ccxt->read_counter, 1);
+                serverFreeReadBuffer(rbuf, conn_p);
                 return;
         }
 
-        buf = rbuf->buffer;
-        buf_len = rbuf->read_buffer_start + sz;
-        rbuf->reference = 1;
+        buf = rbuf->buffer + rbuf->processed_buffer_start;
+        buf_len = rbuf->read_buffer_start - rbuf->processed_buffer_start + sz;
+        __sync_add_and_fetch(&rbuf->reference, 1);
 
         while(true) {
                 if (buf_len < 4) {
-                        serverRead(conn_p, priv_p, buf, buf_len);
+                        serverRead(conn_p, priv_p, rbuf, buf, buf_len);
                         break;
                 }
                 Request *req1 = (Request*)buf;
@@ -214,6 +228,7 @@ static void serverReadCallback(Connection* conn_p, bool rc, void* buffer, size_t
                         reqw->action_callback = serverDoActionCallback;
                         buf += consume_len;
                         buf_len -= consume_len;
+                        rbuf->processed_buffer_start += consume_len;
                         __sync_add_and_fetch(&rbuf->reference, 1);
                         reqw->job.doJob = serverDoAction;
                         __sync_add_and_fetch(&ccxt->received_request_counter, 1);
@@ -224,18 +239,17 @@ static void serverReadCallback(Connection* conn_p, bool rc, void* buffer, size_t
                                 goto out;
                         }
                 } else {
-                        serverRead(conn_p, priv_p, buf, buf_len);
+                        serverRead(conn_p, priv_p, rbuf, buf, buf_len);
                         break;
                 }
         }
 out:
-        left = __sync_sub_and_fetch(&rbuf->reference, 1);
-        if (left == 0) {
-                free(rbuf->buffer);
-                free(rbuf);
-                serverReadDone(conn_p);
+        serverFreeReadBuffer(rbuf, conn_p);
+        if (rc == false) {
+                ELOG("Error close connection!");
+                serverFreeReadBuffer(rbuf, conn_p);
+                conn_p->m->close(conn_p);
         }
-        if (rc == false) conn_p->m->close(conn_p);
 }
 
 static void serverOnConnect(Connection *conn) {

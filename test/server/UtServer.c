@@ -36,7 +36,7 @@ int UtServer(int argv, char **argvs) {
         assert(rc == true);
 
         param.port = 10809;
-        param.read_buffer_size = 1 << 12;
+        param.read_buffer_size = 1 << 22;
         param.request_handler = ExampleHandlers;
         param.request_handler_length = sizeof(ExampleHandlers) / sizeof(RequestHandler);
         param.socket_io_thread_number = 1;

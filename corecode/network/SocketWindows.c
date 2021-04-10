@@ -16,7 +16,7 @@
 #include "network/Connection.h"
 #include "network/Socket.h"
 
-#include "../../corecode/network/ConnectionWindows.h"
+#include "ConnectionWindows.h"
 
 
 #if defined(WIN32) || defined(WIN64)
