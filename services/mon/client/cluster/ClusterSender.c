@@ -9,6 +9,7 @@
 
 #include <stdbool.h>
 #include <mon/share/Cluster.h>
+#include <Log.h>
 
 Response* ClusterResponseDecoderGetObjectServiceMapLatestVersion(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
         return NULL;
@@ -43,7 +44,12 @@ Response* ClusterResponseDecoderStatus(char *buffer, size_t buff_len, size_t *co
 }
 
 Response* ClusterResponseDecoderStop(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
-        return NULL;
+        ClusterStopResponse *resp1 = (ClusterStopResponse*)buffer;
+        if (sizeof(*resp1) > buff_len) return NULL;
+        *consume_len = sizeof(*resp1);
+        *free_req = false;
+        DLOG("ClusterResponseDecoderStop done!");
+        return &resp1->super;
 }
 
 ResponseDecoder ClusterResponseDecoder[] = {
@@ -90,7 +96,12 @@ bool ClusterRequestEncoderStatus(Request *resp, char **buffer, size_t *buff_len,
         return true;
 }
 
-bool ClusterRequestEncoderStop(Request *resp, char **buffer, size_t *buff_len, bool *free_resp) {
+bool ClusterRequestEncoderStop(Request *req, char **buffer, size_t *buff_len, bool *free_req) {
+        ClusterStopRequest *req1 = (ClusterStopRequest*)req;
+        *buffer = (char*) req1;
+        *buff_len = sizeof(*req1);
+        *free_req = false;
+        DLOG("ClusterRequestEncoderStop done!");
         return true;
 }
 

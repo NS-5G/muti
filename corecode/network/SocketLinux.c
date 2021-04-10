@@ -532,6 +532,8 @@ static int sockCreateAndBind(SocketPrivate *priv_p) {
         struct addrinfo hints;
         struct addrinfo *result, *rp;
         int s,sfd;
+        int opt = 1;
+        socklen_t len = sizeof(opt);
 
         memset(&hints,0,sizeof(struct addrinfo));
         hints.ai_family= AF_UNSPEC;/* Return IPv4 and IPv6 */
@@ -548,6 +550,7 @@ static int sockCreateAndBind(SocketPrivate *priv_p) {
                 sfd = socket(rp->ai_family,rp->ai_socktype,rp->ai_protocol);
                 if (sfd == -1)
                         continue;
+                setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &opt, len);
                 s =bind(sfd,rp->ai_addr,rp->ai_addrlen);
                 if (s == 0) {
                         /* We managed to bind successfully! */

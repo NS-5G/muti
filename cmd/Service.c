@@ -123,6 +123,7 @@ int ServiceMonStop(int argv, char **argvs) {
         if (rc == false) {
         	ELOG("Error send stop request.");
         }
+        DLOG("Exiting...");
         client.m->destroy(&client);
 out:
         read_tp.m->destroy(&read_tp);
