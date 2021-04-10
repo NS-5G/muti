@@ -106,26 +106,46 @@ static Readbuffer* clientCreateReadBuffer(ClientPrivate *priv_p) {
 
         rbuf->buffer = malloc(priv_p->param.read_buffer_size);
         rbuf->read_buffer_start = 0;
-        rbuf->reference = 0;
+        rbuf->processed_buffer_start = 0;
+        rbuf->reference = 1;
         return rbuf;
 }
 
+static inline void clientFreeReadBuffer(Readbuffer *rbuf, Connection* conn_p) {
+        CConnectionContext *ccxt;
+        uint64_t left = __sync_sub_and_fetch(&rbuf->reference, 1);
+        if (left == 0) {
+                free(rbuf->buffer);
+                free(rbuf);
+                ccxt = conn_p->m->getContext(conn_p);
+                __sync_add_and_fetch(&ccxt->read_done_counter, 1);
+        }
+}
+
+
 static void clientReadCallback(Connection* conn_p, bool rc, void* buffer, size_t sz, void *cbarg);
 
-static inline void clientRead(Connection* conn_p, ClientPrivate *priv_p, char *buf, size_t buf_len) {
+static inline void clientRead(Connection* conn_p, ClientPrivate *priv_p, Readbuffer *old_rbuf, char *buf, size_t buf_len) {
         CConnectionContext *ccxt = conn_p->m->getContext(conn_p);
-        Readbuffer *rbuf = clientCreateReadBuffer(priv_p);
+        Readbuffer *rbuf;
 
-        memcpy(rbuf->buffer, buf, buf_len);
-        rbuf->read_buffer_start = buf_len;
-        __sync_add_and_fetch(&ccxt->read_counter, 1);
+        if (old_rbuf->processed_buffer_start + buf_len < priv_p->param.read_buffer_size) {
+                rbuf = old_rbuf;
+                rbuf->read_buffer_start = old_rbuf->processed_buffer_start + buf_len;
+        } else {
+                rbuf = clientCreateReadBuffer(priv_p);
+                memcpy(rbuf->buffer, buf, buf_len);
+                rbuf->read_buffer_start = buf_len;
+                clientFreeReadBuffer(old_rbuf, conn_p);
+                __sync_add_and_fetch(&ccxt->read_counter, 1);
+        }
+
         bool rrc = conn_p->m->read(conn_p, rbuf->buffer + rbuf->read_buffer_start,
                         priv_p->param.read_buffer_size - rbuf->read_buffer_start,
                         clientReadCallback, rbuf);
         if (rrc == false) {
-                free(rbuf->buffer);
-                free(rbuf);
-                __sync_add_and_fetch(&ccxt->read_done_counter, 1);
+                clientFreeReadBuffer(rbuf, conn_p);
+                clientFreeReadBuffer(rbuf, conn_p);
         }
 }
 
@@ -134,20 +154,15 @@ static void clientDoJob(Job *job) {
         Connection *conn_p = send_arg->conn;
         Socket* skt = conn_p->m->getSocket(conn_p);
         Client* this = skt->m->getContext(skt);
-        CConnectionContext *ccxt = conn_p->m->getContext(conn_p);
 
         send_arg->callback(this, send_arg->response, send_arg->arg);
         Readbuffer *rbuf = send_arg->rbuf;
-        uint32_t left = __sync_sub_and_fetch(&rbuf->reference, 1);
-        if (left == 0) {
-                free(rbuf->buffer);
-                free(rbuf);
-                __sync_add_and_fetch(&ccxt->read_done_counter, 1);
-        }
+        clientFreeReadBuffer(rbuf, conn_p);
+
         if (send_arg->free_resp) {
                 free(send_arg->response);
         }
-        left = __sync_sub_and_fetch(&send_arg->ref, 1);
+        int left = __sync_sub_and_fetch(&send_arg->ref, 1);
         if (left == 0) {
                 free(send_arg);
         }
@@ -158,26 +173,22 @@ static void clientReadCallback(Connection* conn_p, bool rc, void* buffer, size_t
         Client* this = skt->m->getContext(skt);
         ClientPrivate *priv_p = this->p;
         ThreadPool *work_tp = priv_p->param.worker_tp;
-        CConnectionContext *ccxt = conn_p->m->getContext(conn_p);
         Readbuffer *rbuf = cbarg;
         char *buf;
         size_t buf_len;
-        uint32_t left;
 
         if (rc == false) {
-                free(rbuf->buffer);
-                free(rbuf);
-                __sync_add_and_fetch(&ccxt->read_done_counter, 1);
+                clientFreeReadBuffer(rbuf, conn_p);
                 return;
         }
 
-        buf = rbuf->buffer;
-        buf_len = rbuf->read_buffer_start + sz;
-        rbuf->reference = 1;
+        buf = rbuf->buffer + rbuf->processed_buffer_start;
+        buf_len = rbuf->read_buffer_start - rbuf->processed_buffer_start + sz;
+        __sync_add_and_fetch(&rbuf->reference, 1);
 
         while(true) {
                 if (buf_len < sizeof(Response)) {
-                        clientRead(conn_p, priv_p, buf, buf_len);
+                        clientRead(conn_p, priv_p, rbuf, buf, buf_len);
                         break;
                 }
                 ClientSendArg *send_arg, *send_arg1;
@@ -210,6 +221,7 @@ static void clientReadCallback(Connection* conn_p, bool rc, void* buffer, size_t
                 if (resp) {
                         buf += consume_len;
                         buf_len -= consume_len;
+                        rbuf->processed_buffer_start += consume_len;
                         __sync_add_and_fetch(&rbuf->reference, 1);
                         send_arg->rbuf = rbuf;
                         send_arg->response = resp;
@@ -221,18 +233,16 @@ static void clientReadCallback(Connection* conn_p, bool rc, void* buffer, size_t
                         pthread_mutex_lock(lock);
                         listAdd(&send_arg->element, slot);
                         pthread_mutex_unlock(lock);
-                        clientRead(conn_p, priv_p, buf, buf_len);
+                        clientRead(conn_p, priv_p, rbuf, buf, buf_len);
                         break;
                 }
         }
 out:
-        left = __sync_sub_and_fetch(&rbuf->reference, 1);
-        if (left == 0) {
-                free(rbuf->buffer);
-                free(rbuf);
-                __sync_add_and_fetch(&ccxt->read_done_counter, 1);
+        clientFreeReadBuffer(rbuf, conn_p);
+        if (rc == false) {
+                clientFreeReadBuffer(rbuf, conn_p);
+                conn_p->m->close(conn_p);
         }
-        if (rc == false) conn_p->m->close(conn_p);
 }
 
 static void clientOnConnect(Connection *conn) {

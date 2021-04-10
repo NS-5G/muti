@@ -61,7 +61,7 @@ static void* UtClientDoTest(void *p) {
         id = __sync_fetch_and_add(&the_test_id, 1);
         strcpy(param.host, "127.0.0.1");
         param.port = 10809;
-        param.read_buffer_size = 1 << 12;
+        param.read_buffer_size = 1 << 22;
         param.read_tp = &tp1.read_tp;
         param.write_tp = &tp1.write_tp;
         param.worker_tp = &tp1.work_tp;

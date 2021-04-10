@@ -48,7 +48,7 @@ int UtClient(int argv, char **argvs) {
 
         strcpy(param.host, "127.0.0.1");
         param.port = 10809;
-        param.read_buffer_size = 1 << 12;
+        param.read_buffer_size = 1 << 22;
         param.read_tp = &read_tp;
         param.write_tp = &write_tp;
         param.worker_tp = &work_tp;
