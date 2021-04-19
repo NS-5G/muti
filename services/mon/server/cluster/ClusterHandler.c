@@ -30,23 +30,164 @@ Action ClusterActions[] = {
 };
 
 void ClusterActionGetObjectServiceMapLatestVersion(SRequest *req) {
+        ClusterGetObjectServiceMapLatestVersionRequest *request = (ClusterGetObjectServiceMapLatestVersionRequest*) req->request;
+        Socket* socket = req->connection->m->getSocket(req->connection);
+        Server* server = socket->m->getContext(socket);
+        ServerContextMon *sctx = server->m->getContext(server);
+        ObjectServiceMap *osm = sctx->clusterMap.m->getObjectServiceMap(&sctx->clusterMap);
 
+        ClusterGetObjectServiceMapLatestVersionResponse *resp = malloc(sizeof(*resp));
+        resp->version = osm->version;
+        resp->super.sequence = request->super.sequence;
+        resp->super.error_id = 0;
+        req->response = &resp->super;
+        req->action_callback(req);
 }
 
 void ClusterActionGetLatestObjectServiceMap(SRequest *req) {
+        ClusterGetLatestObjectServiceMapRequest *request = (ClusterGetLatestObjectServiceMapRequest*) req->request;
+        Socket* socket = req->connection->m->getSocket(req->connection);
+        Server* server = socket->m->getContext(socket);
+        ServerContextMon *sctx = server->m->getContext(server);
+        ObjectServiceMap *osm = sctx->clusterMap.m->getObjectServiceMap(&sctx->clusterMap);
 
+        ClusterGetLatestObjectServiceMapResponse *resp = malloc(sizeof(*resp));
+        resp->os_map = osm;
+        resp->super.sequence = request->super.sequence;
+        resp->super.error_id = 0;
+        req->response = &resp->super;
+        req->action_callback(req);
 }
 
 void ClusterActionAddObjectService(SRequest *req) {
-
+        // TODO
 }
 
 void ClusterActionRemoveObjectService(SRequest *req) {
-
+        // TODO
 }
 
-void ClusterActionKeepAliveObjectService(SRequest *req) {
+typedef struct StatMap {
+        ObjectServiceStatus     input;
+        ObjectServiceStatus     output;
+} StatMap;
 
+static StatMap NoneStatMap[] = {
+                {ObjectServiceStatus_Online, ObjectServiceStatus_Error},
+                {ObjectServiceStatus_Syncing, ObjectServiceStatus_Error},
+                {ObjectServiceStatus_Offline, ObjectServiceStatus_Error},
+                {ObjectServiceStatus_ReadyToJoin, ObjectServiceStatus_ReadyToJoin},
+                {ObjectServiceStatus_Error, ObjectServiceStatus_Error},
+};
+
+static StatMap OnlineStatMap[] = {
+                {ObjectServiceStatus_Online, ObjectServiceStatus_Online},
+                {ObjectServiceStatus_Syncing, ObjectServiceStatus_Syncing},
+                {ObjectServiceStatus_Offline, ObjectServiceStatus_Offline},
+                {ObjectServiceStatus_ReadyToJoin, ObjectServiceStatus_Error},
+                {ObjectServiceStatus_Error, ObjectServiceStatus_Error},
+};
+
+static StatMap SyncingStatMap[] = {
+                {ObjectServiceStatus_Online, ObjectServiceStatus_Online},
+                {ObjectServiceStatus_Syncing, ObjectServiceStatus_Syncing},
+                {ObjectServiceStatus_Offline, ObjectServiceStatus_Offline},
+                {ObjectServiceStatus_ReadyToJoin, ObjectServiceStatus_Error},
+                {ObjectServiceStatus_Error, ObjectServiceStatus_Error},
+};
+
+static StatMap OfflineStatMap[] = {
+                {ObjectServiceStatus_Online, ObjectServiceStatus_Online},
+                {ObjectServiceStatus_Syncing, ObjectServiceStatus_Syncing},
+                {ObjectServiceStatus_Offline, ObjectServiceStatus_Offline},
+                {ObjectServiceStatus_ReadyToJoin, ObjectServiceStatus_Error},
+                {ObjectServiceStatus_Error, ObjectServiceStatus_Error},
+};
+
+static StatMap ReadyToJoinStatMap[] = {
+                {ObjectServiceStatus_Online, ObjectServiceStatus_Error},
+                {ObjectServiceStatus_Syncing, ObjectServiceStatus_Syncing},
+                {ObjectServiceStatus_Offline, ObjectServiceStatus_Error},
+                {ObjectServiceStatus_ReadyToJoin, ObjectServiceStatus_ReadyToJoin},
+                {ObjectServiceStatus_Error, ObjectServiceStatus_Error},
+};
+
+static StatMap ErrorStatMap[] = {
+                {ObjectServiceStatus_Online, ObjectServiceStatus_Error},
+                {ObjectServiceStatus_Syncing, ObjectServiceStatus_Error},
+                {ObjectServiceStatus_Offline, ObjectServiceStatus_Error},
+                {ObjectServiceStatus_ReadyToJoin, ObjectServiceStatus_Error},
+                {ObjectServiceStatus_Error, ObjectServiceStatus_Error},
+};
+
+static StatMap *MonStatMap[] = {
+                OnlineStatMap,
+                SyncingStatMap,
+                OfflineStatMap,
+                ReadyToJoinStatMap,
+                ErrorStatMap
+};
+
+/*
+ *      Object Service Stat             Mon Stat                Mon response
+ *
+ *      Online                          None                    Error
+ *      Syncing                         None                    Error
+ *      Offline                         None                    Error
+ *      Ready to join                   None                    Ready to join
+ *      Error                           None                    Error
+ *
+ *      Online                          Online                  Online
+ *      Syncing                         Online                  Syncing
+ *      Offline                         Online                  Offline
+ *      Ready to join                   Online                  Error
+ *      Error                           Online                  Error
+ *
+ *      Online                          Syncing                 Online
+ *      Syncing                         Syncing                 Syncing
+ *      Offline                         Syncing                 Offline
+ *      Ready to join                   Syncing                 Error
+ *      Error                           Syncing                 Error
+ *
+ *      Online                          Offline                 Online
+ *      Syncing                         Offline                 Syncing
+ *      Offline                         Offline                 Offline
+ *      Ready to join                   Offline                 Error
+ *      Error                           Offline                 Error
+ *
+ *      Online                          Ready to join           Error
+ *      Syncing                         Ready to join           Syncing
+ *      Offline                         Ready to join           Error
+ *      Ready to join                   Ready to join           Ready to join
+ *      Error                           Ready to join           Error
+ *
+ *      Online                          Error                   Error
+ *      Syncing                         Error                   Error
+ *      Offline                         Error                   Error
+ *      Ready to join                   Error                   Error
+ *      Error                           Error                   Error
+ */
+void ClusterActionKeepAliveObjectService(SRequest *req) {
+        ClusterKeepAliveObjectServiceRequest *request = (ClusterKeepAliveObjectServiceRequest*) req->request;
+        Socket* socket = req->connection->m->getSocket(req->connection);
+        Server* server = socket->m->getContext(socket);
+        ServerContextMon *sctx = server->m->getContext(server);
+        ObjectServiceMap *osm = sctx->clusterMap.m->getObjectServiceMap(&sctx->clusterMap);
+        ClusterKeepAliveObjectServiceResponse *resp = malloc(sizeof(*resp));
+
+        ObjectService *os = osm->os_map.m->get(&osm->os_map, &request->os_id);
+        if (os == NULL) {
+                resp->status = NoneStatMap[request->status].output;
+        } else {
+                resp->status = MonStatMap[os->status][request->status].output;
+                os->status = resp->status;
+        }
+
+        resp->version = osm->version;
+        resp->super.sequence = request->super.sequence;
+        resp->super.error_id = 0;
+        req->response = &resp->super;
+        req->action_callback(req);
 }
 
 void ClusterActionKeepAliveClient(SRequest *req) {

@@ -12,10 +12,11 @@
 #include <util/Map.h>
 
 typedef enum ObjectServiceStatus {
-	ObjectServiceStatus_Online = 1,
+	ObjectServiceStatus_Online = 0,
 	ObjectServiceStatus_Syncing,
 	ObjectServiceStatus_Offline,
-	ObjectServiceStatus_Deleting,
+	ObjectServiceStatus_ReadyToJoin,
+	ObjectServiceStatus_Error,
 } ObjectServiceStatus;
 
 typedef struct BSet BSet;

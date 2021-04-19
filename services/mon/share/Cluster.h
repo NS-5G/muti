@@ -40,7 +40,7 @@ typedef struct ClusterGetLatestObjectServiceMapRequest {
 
 typedef struct ClusterGetLatestObjectServiceMapResponse {
         Response        	super;
-        ObjectServiceMap	os_map;
+        ObjectServiceMap	*os_map;
 } ClusterGetLatestObjectServiceMapResponse;
 
 typedef struct ClusterAddObjectServiceRequest {
@@ -65,6 +65,7 @@ typedef struct ClusterRemoveObjectServiceResponse {
 
 typedef struct ClusterKeepAliveObjectServiceRequest {
         Request         	super;
+        uint32_t                version;
         uint32_t		os_id;
         ObjectServiceStatus	status;
 } ClusterKeepAliveObjectServiceRequest;

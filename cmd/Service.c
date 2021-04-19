@@ -55,7 +55,7 @@ int ServiceMonStart(int argv, char **argvs) {
 	param.request_handler_length = sizeof(MonHandlers) / sizeof(RequestHandler);
 	param.socket_io_thread_number = 1;
 	param.worker_tp = &work_tp;
-	param.max_read_buffer_counter = 1000000;
+	param.max_read_buffer_counter = 16;
 	param.context = &scxt;
 
 	rc = initServer(&server, &param);
