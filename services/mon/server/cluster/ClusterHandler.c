@@ -76,7 +76,7 @@ static StatMap NoneStatMap[] = {
                 {ObjectServiceStatus_Online, ObjectServiceStatus_Error},
                 {ObjectServiceStatus_Syncing, ObjectServiceStatus_Error},
                 {ObjectServiceStatus_Offline, ObjectServiceStatus_Error},
-                {ObjectServiceStatus_ReadyToJoin, ObjectServiceStatus_ReadyToJoin},
+                {ObjectServiceStatus_ReadyToJoin, ObjectServiceStatus_Error},
                 {ObjectServiceStatus_Error, ObjectServiceStatus_Error},
 };
 
@@ -84,7 +84,7 @@ static StatMap OnlineStatMap[] = {
                 {ObjectServiceStatus_Online, ObjectServiceStatus_Online},
                 {ObjectServiceStatus_Syncing, ObjectServiceStatus_Syncing},
                 {ObjectServiceStatus_Offline, ObjectServiceStatus_Offline},
-                {ObjectServiceStatus_ReadyToJoin, ObjectServiceStatus_Error},
+                {ObjectServiceStatus_ReadyToJoin, ObjectServiceStatus_Syncing},
                 {ObjectServiceStatus_Error, ObjectServiceStatus_Error},
 };
 
@@ -100,7 +100,7 @@ static StatMap OfflineStatMap[] = {
                 {ObjectServiceStatus_Online, ObjectServiceStatus_Online},
                 {ObjectServiceStatus_Syncing, ObjectServiceStatus_Syncing},
                 {ObjectServiceStatus_Offline, ObjectServiceStatus_Offline},
-                {ObjectServiceStatus_ReadyToJoin, ObjectServiceStatus_Error},
+                {ObjectServiceStatus_ReadyToJoin, ObjectServiceStatus_Syncing},
                 {ObjectServiceStatus_Error, ObjectServiceStatus_Error},
 };
 
@@ -134,13 +134,13 @@ static StatMap *MonStatMap[] = {
  *      Online                          None                    Error
  *      Syncing                         None                    Error
  *      Offline                         None                    Error
- *      Ready to join                   None                    Ready to join
+ *      Ready to join                   None                    Error
  *      Error                           None                    Error
  *
  *      Online                          Online                  Online
  *      Syncing                         Online                  Syncing
  *      Offline                         Online                  Offline
- *      Ready to join                   Online                  Error
+ *      Ready to join                   Online                  Syncing
  *      Error                           Online                  Error
  *
  *      Online                          Syncing                 Online
@@ -152,7 +152,7 @@ static StatMap *MonStatMap[] = {
  *      Online                          Offline                 Online
  *      Syncing                         Offline                 Syncing
  *      Offline                         Offline                 Offline
- *      Ready to join                   Offline                 Error
+ *      Ready to join                   Offline                 Syncing
  *      Error                           Offline                 Error
  *
  *      Online                          Ready to join           Error
