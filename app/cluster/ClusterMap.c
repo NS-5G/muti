@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <unistd.h>
 
 #include <cluster/ClusterMap.h>
 
@@ -43,11 +44,12 @@ bool clusterMapBinDump(ObjectServiceMap *os_map,  char **buffer, ssize_t *buf_le
         uint32_t i, j;
 
         total_len = 14 + os_map->bset_length * (4 + os_map->bset_replica_size * 4) +
-                        os_map->object_service_length * (12 + NETWORK_HOST_LEN + 1);
-        for (i = 0; i < os_map->object_service_length; i++) {
-                ObjectService *os = &os_map->object_services[i];
+                        os_map->object_service_length * (13 + NETWORK_HOST_LEN + 1);
+        ObjectService *os;
+        listForEachEntry(os, &os_map->object_service_list, element) {
                 total_len += os->bset_length * 4;
         }
+
         buf = malloc(total_len);
         *buffer = buf;
 
@@ -75,8 +77,7 @@ bool clusterMapBinDump(ObjectServiceMap *os_map,  char **buffer, ssize_t *buf_le
                 }
         }
 
-        for (i = 0; i < os_map->object_service_length; i++) {
-                ObjectService *os = &os_map->object_services[i];
+        listForEachEntry(os, &os_map->object_service_list, element) {
 
                 *(uint32_t*)buf = os->id;
                 buf += 4; len += 4;
@@ -86,6 +87,9 @@ bool clusterMapBinDump(ObjectServiceMap *os_map,  char **buffer, ssize_t *buf_le
 
                 *(uint32_t*)buf = os->port;
                 buf += 4; len += 4;
+
+                *(int8_t*)buf = os->status;
+                buf += 1; len += 1;
 
                 *(uint32_t*)buf = os->bset_length;
                 buf += 4; len += 4;
@@ -101,13 +105,32 @@ bool clusterMapBinDump(ObjectServiceMap *os_map,  char **buffer, ssize_t *buf_le
         return true;
 }
 
+void clusterMapFreeOSMap(ObjectServiceMap *os_map) {
+        uint32_t i;
+        if (os_map->bset != NULL) {
+                for (i = 0; i < os_map->bset_length; i++) {
+                        BSet *bset = &os_map->bset[i];
+                        if (bset->object_service_ids != NULL) free(bset->object_service_ids);
+                }
+                free(os_map->bset);
+        }
+        if (!listEmpty(&os_map->object_service_list)) {
+                while (!listEmpty(&os_map->object_service_list)) {
+                        ObjectService *os = listFirstEntry(&os_map->object_service_list, ObjectService, element);
+                        listDel(&os->element);
+                        if (os->bset_ids != NULL) free(os->bset_ids);
+                        free(os);
+                }
+        }
+}
+
 bool clusterMapBinParse(ObjectServiceMap *os_map,  char *buffer, ssize_t buf_len) {
         char *buf = buffer;
         ssize_t len = 0;
         uint32_t i, j;
 
         os_map->bset = NULL;
-        os_map->object_services = NULL;
+        listHeadInit(&os_map->object_service_list);
         os_map->status = ObjectServiceMapStatus_Updating;
 
         len += 4; if (len > buf_len) { goto error_out;}
@@ -144,10 +167,9 @@ bool clusterMapBinParse(ObjectServiceMap *os_map,  char *buffer, ssize_t buf_len
         }
 
         clusterMapInitOSMap(os_map);
-        os_map->object_services = calloc(sizeof(ObjectService), os_map->object_service_length);
 
         for (i = 0; i < os_map->object_service_length; i++) {
-                ObjectService *os = &os_map->object_services[i];
+                ObjectService *os = malloc(sizeof(*os));
 
                 len += 4; if (len > buf_len) { goto error_out;}
                 os->id = *(uint32_t*)buf;
@@ -161,6 +183,10 @@ bool clusterMapBinParse(ObjectServiceMap *os_map,  char *buffer, ssize_t buf_len
                 os->port = *(uint32_t*)buf;
                 buf += 4;
 
+                len += 1; if (len > buf_len) { goto error_out;}
+                os->status = *(int8_t*)buf;
+                buf += 1;
+
                 len += 4; if (len > buf_len) { goto error_out;}
                 os->bset_length = *(uint32_t*)buf;
                 buf += 4;
@@ -171,35 +197,41 @@ bool clusterMapBinParse(ObjectServiceMap *os_map,  char *buffer, ssize_t buf_len
                         os->bset_ids[j] = *(uint32_t*)buf;
                         buf += 4;
                 }
-                os->status = ObjectServiceStatus_Offline;
 
                 void *v = os_map->os_map.m->put(&os_map->os_map, &os->id, os);
                 assert(v == NULL);
+                listAddTail(&os->element, &os_map->object_service_list);
         }
 
         return true;
 error_out:
-        if (os_map->bset != NULL) {
-                for (i = 0; i < os_map->bset_length; i++) {
-                        BSet *bset = &os_map->bset[i];
-                        if (bset->object_service_ids != NULL) free(bset->object_service_ids);
-                }
-                free(os_map->bset);
-        }
-        if (os_map->object_services != NULL) {
-                for (i = 0; i < os_map->object_service_length; i++) {
-                        ObjectService *os = &os_map->object_services[i];
-                        if (os->bset_ids != NULL) free(os->bset_ids);
-                }
-                free(os_map->object_services);
-        }
+        clusterMapFreeOSMap(os_map);
         return false;
 }
 
 ObjectServiceMap* clusterMapGetObjectServiceMap(ClusterMap* obj) {
 	ClusterMapPrivate *priv_p = obj->p;
+	__sync_add_and_fetch(&priv_p->os_map->reference, 1);
+	return priv_p->os_map;
+}
 
-	return &priv_p->os_map;
+void clusterMapPutObjectServiceMap(ClusterMap* obj, ObjectServiceMap* os_map) {
+        ClusterMapPrivate *priv_p = obj->p;
+        int left = __sync_sub_and_fetch(&os_map->reference, 1);
+        if (left == 0) {
+                clusterMapFreeOSMap(os_map);
+                if (os_map == priv_p->os_map) {
+                        // TODO Need lock check here
+                        priv_p->os_map = NULL;
+                }
+                free(os_map);
+        }
+}
+
+void clusterMapDestroy(ClusterMap* obj) {
+        ClusterMapPrivate *priv_p = obj->p;
+        clusterMapPutObjectServiceMap(obj,priv_p->os_map);
+        while (priv_p->os_map != NULL) usleep(100000);
 }
 
 bool initClusterMap(ClusterMap* obj, ClusterMapParam* param) {
@@ -218,7 +250,10 @@ bool initClusterMap(ClusterMap* obj, ClusterMapParam* param) {
 	default:
 		assert(0);
 	}
-	
+	if (rc == true) {
+	        ClusterMapPrivate *priv_p = obj->p;
+	        priv_p->os_map->reference = 1;
+	}
 	return rc;
 }
 

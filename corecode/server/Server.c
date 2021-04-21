@@ -114,7 +114,8 @@ static void serverDoActionCallback(SRequest *reqw) {
                 __sync_add_and_fetch(&ccxt->write_done_counter, 1);
         }
         if (free_resp) {
-                free(reqw->response);
+                if (reqw->free_response) reqw->free_response(reqw);
+                else free(reqw->response);
         }
         if (reqw->free_req) {
                 free(reqw->request);
@@ -226,6 +227,7 @@ static void serverReadCallback(Connection* conn_p, bool rc, void* buffer, size_t
                         reqw->response = NULL;
                         reqw->free_req = free_req;
                         reqw->action_callback = serverDoActionCallback;
+                        reqw->free_response = NULL;
                         buf += consume_len;
                         buf_len -= consume_len;
                         rbuf->processed_buffer_start += consume_len;

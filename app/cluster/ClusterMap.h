@@ -10,6 +10,7 @@
 #include <stdbool.h>
 #include <network/Socket.h>
 #include <util/Map.h>
+#include <util/LinkedList.h>
 
 typedef enum ObjectServiceStatus {
 	ObjectServiceStatus_Online = 0,
@@ -22,6 +23,7 @@ typedef enum ObjectServiceStatus {
 typedef struct BSet BSet;
 
 typedef struct ObjectService {
+        ListElement             element;
         uint32_t                id;
         ObjectServiceStatus     status;
         char                    host[NETWORK_HOST_LEN + 1];
@@ -45,11 +47,12 @@ typedef struct ObjectServiceMap {
 	uint32_t		version;
 	ObjectServiceMapStatus	status;
 	uint32_t		object_service_length;
-	ObjectService		*object_services;
+	ListHead                object_service_list;
 	Map			os_map;
 	uint32_t		bset_length;
 	BSet			*bset;
 	uint16_t		bset_replica_size;
+	volatile int            reference;
 } ObjectServiceMap;
 
 typedef enum {
@@ -78,6 +81,7 @@ typedef struct ClusterMapMethod {
 	int			(*RemoveObjectService)(ClusterMap*, uint32_t);
 	int			(*AddObjectService)(ClusterMap*, ObjectService*);
 	ObjectServiceMap* 	(*getObjectServiceMap)(ClusterMap*);
+	void                    (*putObjectServiceMap)(ClusterMap*, ObjectServiceMap *);
         void    		(*destroy)(ClusterMap*);
 } ClusterMapMethod;
 

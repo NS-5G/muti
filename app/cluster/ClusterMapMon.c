@@ -26,6 +26,20 @@ typedef struct ClusterMapMonPrivate {
 	ClusterMapMonParam	param;
 } ClusterMapMonPrivate;
 
+static ObjectService *cmmGetOSbyIndex(ObjectServiceMap *os_map, uint32_t k) {
+        uint32_t i = 0, got_it = 0;
+        ObjectService *os;
+        listForEachEntry(os, &os_map->object_service_list, element) {
+                if (i == k) {
+                        got_it = 1;
+                        break;
+                }
+                i++;
+        }
+        assert(got_it == 1);
+        return os;
+}
+
 static void cmmFillBSets(ObjectServiceMap *os_map) {
         uint32_t total_bset_num = os_map->bset_length * os_map->bset_replica_size;
         uint32_t avg_bset_num = total_bset_num / os_map->object_service_length;
@@ -41,8 +55,7 @@ static void cmmFillBSets(ObjectServiceMap *os_map) {
                 bset->object_service_ids = malloc(sizeof(uint32_t) * os_map->bset_replica_size);
         }
 
-        for (k = 0; k < os_map->object_service_length; k++) {
-                os = &os_map->object_services[k];
+        listForEachEntry(os, &os_map->object_service_list, element) {
                 os->bset_ids = malloc(sizeof(uint32_t) * avg_bset_num);
                 os->bset_length = 0;
                 os->user_define = NULL;
@@ -52,15 +65,13 @@ static void cmmFillBSets(ObjectServiceMap *os_map) {
                 for (i = 0; i < os_map->bset_length; i++) {
                         l = (j + i) % os_map->bset_length;
                         k = l % os_map->object_service_length;
-                        os = &os_map->object_services[k];
+                        os = cmmGetOSbyIndex(os_map, k);
                         os->bset_ids[os->bset_length++] = l;
                         assert(os->bset_length <= avg_bset_num);
                         bset = &os_map->bset[l];
                         bset->object_service_ids[j] = os->id;
                 }
         }
-
-
 }
 
 /**
@@ -100,7 +111,6 @@ static bool cmmParseClusterMap(ObjectServiceMap *os_map, char *buffer, ssize_t b
 
         cJSON *js_object_services = cJSON_GetObjectItem(root, "object_services");
         os_map->object_service_length = cJSON_GetArraySize(js_object_services);
-        os_map->object_services = malloc(sizeof(ObjectService) * os_map->object_service_length);
         os_map->status = ObjectServiceMapStatus_Updating;
         os_map->version = 0;
 
@@ -108,7 +118,7 @@ static bool cmmParseClusterMap(ObjectServiceMap *os_map, char *buffer, ssize_t b
 
         for (i = 0; i < os_map->object_service_length; i++) {
                 cJSON *js_os = cJSON_GetArrayItem(js_object_services, i);
-                ObjectService *os = &os_map->object_services[i];
+                ObjectService *os = malloc(sizeof(*os));
 
                 cJSON *js_id = cJSON_GetObjectItem(js_os, "id");
                 cJSON *js_host = cJSON_GetObjectItem(js_os, "host");
@@ -132,6 +142,7 @@ static bool cmmParseClusterMap(ObjectServiceMap *os_map, char *buffer, ssize_t b
                 os->status = ObjectServiceStatus_Offline;
                 os->bset_ids = NULL;
                 os->bset_length = 0;
+                listAddTail(&os->element, &os_map->object_service_list);
         }
 
         cmmFillBSets(os_map);
@@ -140,7 +151,12 @@ out:
         cJSON_Delete(root);
         return rc;
 out1:
-        free(os_map->object_services);
+        while (!listEmpty(&os_map->object_service_list)) {
+                ObjectService *os = listFirstEntry(&os_map->object_service_list, ObjectService, element);
+                listDel(&os->element);
+                if (os->bset_ids != NULL) free(os->bset_ids);
+                free(os);
+        }
         os_map->os_map.m->destroy(&os_map->os_map);
         cJSON_Delete(root);
         return rc;
@@ -148,26 +164,29 @@ out1:
 }
 
 static void destroy(ClusterMap* obj) {
-	ClusterMapMonPrivate *priv = obj->p;
-	
-	free(priv);
+        ClusterMapMonPrivate *priv_p = obj->p;
+        clusterMapDestroy(obj);
+	free(priv_p);
 }
 
 static ClusterMapMethod method = {
 	.getObjectServiceMap = clusterMapGetObjectServiceMap,
+	.putObjectServiceMap = clusterMapPutObjectServiceMap,
         .destroy = destroy,
 };
 
 bool initClusterMapMon(ClusterMap* obj, ClusterMapParam* param) {
-	ClusterMapMonPrivate *priv = malloc(sizeof(*priv));
+	ClusterMapMonPrivate *priv_p = malloc(sizeof(*priv_p));
 	ClusterMapMonParam *mparam = (ClusterMapMonParam*)param;
 	bool rc;
 	char *buffer;
 	ssize_t buf_len;
 
-	obj->p = priv;
+	obj->p = priv_p;
 	obj->m = &method;
-	memcpy(&priv->param, mparam, sizeof(*mparam));
+	memcpy(&priv_p->param, mparam, sizeof(*mparam));
+	priv_p->super.os_map = calloc(sizeof(*priv_p->super.os_map), 1);
+	listHeadInit(&priv_p->super.os_map->object_service_list);
 	
 	rc = fileUtilReadAFile(MON_OBJECT_SERVICE_MAP_BIN_PATH, &buffer, &buf_len);
 	if (rc == false) {
@@ -176,16 +195,16 @@ bool initClusterMapMon(ClusterMap* obj, ClusterMapParam* param) {
 	        rc = fileUtilReadAFile(mparam->init_path, &buffer, &buf_len);
 	        if (rc == false) {
 	        	ELOG("Read file %s failed.", mparam->init_path);
-	        	return rc;
+	        	goto error_out;
 	        }
-	        rc = cmmParseClusterMap(&priv->super.os_map, buffer, buf_len);
+	        rc = cmmParseClusterMap(priv_p->super.os_map, buffer, buf_len);
 	        if (rc == false) {
 	        	ELOG("cmmParseClusterMap parse file %s failed.", mparam->init_path);
 	                free(buffer);
-	                return rc;
+	                goto error_out;
 	        }
 	        free(buffer);
-	        rc = clusterMapBinDump(&priv->super.os_map,  &buffer, &buf_len);
+	        rc = clusterMapBinDump(priv_p->super.os_map,  &buffer, &buf_len);
 	        if (rc == false) {
 	                ELOG("Error dump object service map");
 	                assert(0);
@@ -197,14 +216,20 @@ bool initClusterMapMon(ClusterMap* obj, ClusterMapParam* param) {
                 }
 	        free(buffer);
 	} else {
-	        rc = clusterMapBinParse(&priv->super.os_map, buffer, buf_len);
+	        rc = clusterMapBinParse(priv_p->super.os_map, buffer, buf_len);
 	        if (rc == false) {
 	                free(buffer);
-	                return rc;
+	                goto error_out;
 	        }
 	        free(buffer);
 	}
+
 	return true;
+error_out:
+        clusterMapFreeOSMap(priv_p->super.os_map);
+        free(priv_p->super.os_map);
+        free(priv_p);
+        return rc;
 }
 
 

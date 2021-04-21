@@ -17,6 +17,7 @@
 typedef struct RequestHandler RequestHandler;
 typedef struct SRequest SRequest;
 typedef void (*ActionCallback)(SRequest *);
+typedef void (*FreeResponse)(SRequest *);
 
 struct SRequest {
         Job             job;
@@ -27,6 +28,7 @@ struct SRequest {
         Response        *response;
         Readbuffer      *read_buffer;
         ActionCallback  action_callback;
+        FreeResponse    free_response;
 };
 
 typedef void (*Action)(SRequest *);

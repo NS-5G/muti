@@ -34,14 +34,25 @@ void ClusterActionGetObjectServiceMapLatestVersion(SRequest *req) {
         Socket* socket = req->connection->m->getSocket(req->connection);
         Server* server = socket->m->getContext(socket);
         ServerContextMon *sctx = server->m->getContext(server);
-        ObjectServiceMap *osm = sctx->clusterMap.m->getObjectServiceMap(&sctx->clusterMap);
+        ObjectServiceMap *os_map = sctx->clusterMap.m->getObjectServiceMap(&sctx->clusterMap);
 
         ClusterGetObjectServiceMapLatestVersionResponse *resp = malloc(sizeof(*resp));
-        resp->version = osm->version;
+        resp->version = os_map->version;
+        sctx->clusterMap.m->putObjectServiceMap(&sctx->clusterMap, os_map);
         resp->super.sequence = request->super.sequence;
         resp->super.error_id = 0;
         req->response = &resp->super;
         req->action_callback(req);
+}
+
+static void ClusterActionGetLatestObjectServiceMapFreeResponse(SRequest *req) {
+        Socket* socket = req->connection->m->getSocket(req->connection);
+        Server* server = socket->m->getContext(socket);
+        ServerContextMon *sctx = server->m->getContext(server);
+        ClusterGetLatestObjectServiceMapResponse *resp = (ClusterGetLatestObjectServiceMapResponse *)req->response;
+
+        sctx->clusterMap.m->putObjectServiceMap(&sctx->clusterMap, resp->os_map);
+        free(resp);
 }
 
 void ClusterActionGetLatestObjectServiceMap(SRequest *req) {
@@ -49,13 +60,14 @@ void ClusterActionGetLatestObjectServiceMap(SRequest *req) {
         Socket* socket = req->connection->m->getSocket(req->connection);
         Server* server = socket->m->getContext(socket);
         ServerContextMon *sctx = server->m->getContext(server);
-        ObjectServiceMap *osm = sctx->clusterMap.m->getObjectServiceMap(&sctx->clusterMap);
+        ObjectServiceMap *os_map = sctx->clusterMap.m->getObjectServiceMap(&sctx->clusterMap);
 
         ClusterGetLatestObjectServiceMapResponse *resp = malloc(sizeof(*resp));
-        resp->os_map = osm;
+        resp->os_map = os_map;
         resp->super.sequence = request->super.sequence;
         resp->super.error_id = 0;
         req->response = &resp->super;
+        req->free_response = ClusterActionGetLatestObjectServiceMapFreeResponse;
         req->action_callback(req);
 }
 
@@ -172,18 +184,19 @@ void ClusterActionKeepAliveObjectService(SRequest *req) {
         Socket* socket = req->connection->m->getSocket(req->connection);
         Server* server = socket->m->getContext(socket);
         ServerContextMon *sctx = server->m->getContext(server);
-        ObjectServiceMap *osm = sctx->clusterMap.m->getObjectServiceMap(&sctx->clusterMap);
+        ObjectServiceMap *os_map = sctx->clusterMap.m->getObjectServiceMap(&sctx->clusterMap);
         ClusterKeepAliveObjectServiceResponse *resp = malloc(sizeof(*resp));
 
-        ObjectService *os = osm->os_map.m->get(&osm->os_map, &request->os_id);
+        ObjectService *os = os_map->os_map.m->get(&os_map->os_map, &request->os_id);
         if (os == NULL) {
                 resp->status = NoneStatMap[request->status].output;
         } else {
                 resp->status = MonStatMap[os->status][request->status].output;
                 os->status = resp->status;
         }
+        resp->version = os_map->version;
+        sctx->clusterMap.m->putObjectServiceMap(&sctx->clusterMap, os_map);
 
-        resp->version = osm->version;
         resp->super.sequence = request->super.sequence;
         resp->super.error_id = 0;
         req->response = &resp->super;
