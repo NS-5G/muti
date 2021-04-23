@@ -102,7 +102,7 @@ static void serverDoActionCallback(SRequest *reqw) {
         if (error_id == 0) {
                 RequestHandler *res = reqw->req_handler;
                 res->response_encoders[reqw->request->request_id]
-                         (reqw->response, &buffer, &buff_len, &free_resp);
+                         (conn_p, reqw->response, &buffer, &buff_len, &free_resp);
         } else {
                 ErrorResponseEncoder(reqw->response, &buffer, &buff_len, &free_resp);
         }
@@ -217,7 +217,7 @@ static void serverReadCallback(Connection* conn_p, bool rc, void* buffer, size_t
                 }
                 size_t consume_len;
                 bool free_req;
-                Request *req = reqDecoder(buf, buf_len, &consume_len, &free_req);
+                Request *req = reqDecoder(conn_p, buf, buf_len, &consume_len, &free_req);
                 if (req) {
                         SRequest *reqw = malloc(sizeof(*reqw));
                         reqw->connection = conn_p;

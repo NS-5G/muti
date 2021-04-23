@@ -17,10 +17,10 @@ typedef struct ServerContextMonMethod {
 } ServerContextMonMethod;
 
 struct ServerContextMon {
-        void                        *p;
-        ServerContextMonMethod      *m;
-        ClusterMap			clusterMap;
-        sem_t				stop_sem;
+        void                    *p;
+        ServerContextMonMethod  *m;
+        ClusterMap              clusterMap;
+        sem_t                   stop_sem;
 };
 
 typedef struct ServerContextMonParam {

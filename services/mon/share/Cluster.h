@@ -101,10 +101,10 @@ typedef struct ClusterStatusRequest {
 
 typedef struct ClusterStatusResponse {
         Response        	super;
-        ObjectServiceMap	os_map;
         uint64_t		total_objects;
         uint64_t		used;
         uint64_t		free;
+        ObjectServiceMap        *os_map;
 } ClusterStatusResponse;
 
 typedef struct ClusterStopRequest {

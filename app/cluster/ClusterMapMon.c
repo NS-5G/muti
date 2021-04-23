@@ -172,6 +172,9 @@ static void destroy(ClusterMap* obj) {
 static ClusterMapMethod method = {
 	.getObjectServiceMap = clusterMapGetObjectServiceMap,
 	.putObjectServiceMap = clusterMapPutObjectServiceMap,
+	.parseObjectServiceMap = clusterMapParseObjectServiceMap,
+	.dumpObjectServiceMap = clusterMapDumpObjectServiceMap,
+	.dumpObjectServiceMapLength = clusterMapDumpObjectServiceMapLength,
         .destroy = destroy,
 };
 
@@ -204,7 +207,9 @@ bool initClusterMapMon(ClusterMap* obj, ClusterMapParam* param) {
 	                goto error_out;
 	        }
 	        free(buffer);
-	        rc = clusterMapBinDump(priv_p->super.os_map,  &buffer, &buf_len);
+	        buf_len = clusterMapDumpObjectServiceMapLength(priv_p->super.os_map);
+	        buffer = malloc(buf_len);
+	        rc = clusterMapDumpObjectServiceMap(priv_p->super.os_map,  buffer, buf_len);
 	        if (rc == false) {
 	                ELOG("Error dump object service map");
 	                assert(0);
@@ -216,7 +221,7 @@ bool initClusterMapMon(ClusterMap* obj, ClusterMapParam* param) {
                 }
 	        free(buffer);
 	} else {
-	        rc = clusterMapBinParse(priv_p->super.os_map, buffer, buf_len);
+	        rc = clusterMapParseObjectServiceMap(priv_p->super.os_map, buffer, buf_len);
 	        if (rc == false) {
 	                free(buffer);
 	                goto error_out;

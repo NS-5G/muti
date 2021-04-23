@@ -38,10 +38,8 @@ void clusterMapInitOSMap(ObjectServiceMap *os_map) {
         initMapHashLinked(&os_map->os_map, &mparam);
 }
 
-bool clusterMapBinDump(ObjectServiceMap *os_map,  char **buffer, ssize_t *buf_len) {
-        char *buf;
-        ssize_t len = 0, total_len;
-        uint32_t i, j;
+ssize_t clusterMapDumpObjectServiceMapLength(ObjectServiceMap *os_map) {
+        ssize_t total_len;
 
         total_len = 14 + os_map->bset_length * (4 + os_map->bset_replica_size * 4) +
                         os_map->object_service_length * (13 + NETWORK_HOST_LEN + 1);
@@ -49,9 +47,13 @@ bool clusterMapBinDump(ObjectServiceMap *os_map,  char **buffer, ssize_t *buf_le
         listForEachEntry(os, &os_map->object_service_list, element) {
                 total_len += os->bset_length * 4;
         }
+        return total_len;
+}
 
-        buf = malloc(total_len);
-        *buffer = buf;
+bool clusterMapDumpObjectServiceMap(ObjectServiceMap *os_map,  char *buf, ssize_t total_len) {
+        ssize_t len = 0;
+        uint32_t i, j;
+        ObjectService *os;
 
         *(uint32_t*)buf = os_map->version;
         buf += 4; len += 4;
@@ -101,7 +103,6 @@ bool clusterMapBinDump(ObjectServiceMap *os_map,  char **buffer, ssize_t *buf_le
         }
 
         assert(len == total_len);
-        *buf_len = len;
         return true;
 }
 
@@ -124,7 +125,7 @@ void clusterMapFreeOSMap(ObjectServiceMap *os_map) {
         }
 }
 
-bool clusterMapBinParse(ObjectServiceMap *os_map,  char *buffer, ssize_t buf_len) {
+bool clusterMapParseObjectServiceMap(ObjectServiceMap *os_map,  char *buffer, ssize_t buf_len) {
         char *buf = buffer;
         ssize_t len = 0;
         uint32_t i, j;

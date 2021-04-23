@@ -32,8 +32,8 @@ struct SRequest {
 };
 
 typedef void (*Action)(SRequest *);
-typedef Request* (*RequestDecoder)(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req);
-typedef bool (*ResponseEncoder)(Response *resp, char **buffer, size_t *buff_len, bool *free_resp);
+typedef Request* (*RequestDecoder)(Connection *conn, char *buffer, size_t buff_len, size_t *consume_len, bool *free_req);
+typedef bool (*ResponseEncoder)(Connection *conn, Response *resp, char **buffer, size_t *buff_len, bool *free_resp);
 
 struct RequestHandler {
         int             id;

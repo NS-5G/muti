@@ -71,14 +71,6 @@ void ClusterActionGetLatestObjectServiceMap(SRequest *req) {
         req->action_callback(req);
 }
 
-void ClusterActionAddObjectService(SRequest *req) {
-        // TODO
-}
-
-void ClusterActionRemoveObjectService(SRequest *req) {
-        // TODO
-}
-
 typedef struct StatMap {
         ObjectServiceStatus     input;
         ObjectServiceStatus     output;
@@ -204,15 +196,61 @@ void ClusterActionKeepAliveObjectService(SRequest *req) {
 }
 
 void ClusterActionKeepAliveClient(SRequest *req) {
+        ClusterKeepAliveClientRequest *request = (ClusterKeepAliveClientRequest*) req->request;
+        Socket* socket = req->connection->m->getSocket(req->connection);
+        Server* server = socket->m->getContext(socket);
+        ServerContextMon *sctx = server->m->getContext(server);
+        ObjectServiceMap *os_map = sctx->clusterMap.m->getObjectServiceMap(&sctx->clusterMap);
+        ClusterKeepAliveClientResponse *resp = malloc(sizeof(*resp));
 
+        resp->version = os_map->version;
+        sctx->clusterMap.m->putObjectServiceMap(&sctx->clusterMap, os_map);
+
+        resp->super.sequence = request->super.sequence;
+        resp->super.error_id = 0;
+        req->response = &resp->super;
+        req->action_callback(req);
 }
 
-void ClusterActionGetObjectServiceMapChangeLog(SRequest *req) {
+static void ClusterActionStatusFreeResponse(SRequest *req) {
+        Socket* socket = req->connection->m->getSocket(req->connection);
+        Server* server = socket->m->getContext(socket);
+        ServerContextMon *sctx = server->m->getContext(server);
+        ClusterStatusResponse *resp = (ClusterStatusResponse *)req->response;
 
+        sctx->clusterMap.m->putObjectServiceMap(&sctx->clusterMap, resp->os_map);
+        free(resp);
 }
 
 void ClusterActionStatus(SRequest *req) {
+        ClusterStatusRequest *request = (ClusterStatusRequest*) req->request;
+        Socket* socket = req->connection->m->getSocket(req->connection);
+        Server* server = socket->m->getContext(socket);
+        ServerContextMon *sctx = server->m->getContext(server);
+        ObjectServiceMap *os_map = sctx->clusterMap.m->getObjectServiceMap(&sctx->clusterMap);
+        ClusterStatusResponse *resp = malloc(sizeof(*resp));
 
+        resp->os_map = os_map;
+        resp->total_objects = 0; // TODO
+        resp->free = 0; // TODO
+        resp->used = 0; // TODO
+        resp->super.sequence = request->super.sequence;
+        resp->super.error_id = 0;
+        req->response = &resp->super;
+        req->free_response = ClusterActionStatusFreeResponse;
+        req->action_callback(req);
+}
+
+void ClusterActionAddObjectService(SRequest *req) {
+        // TODO
+}
+
+void ClusterActionRemoveObjectService(SRequest *req) {
+        // TODO
+}
+
+void ClusterActionGetObjectServiceMapChangeLog(SRequest *req) {
+        // TODO
 }
 
 static void* clusterActionStopThread(void *p) {
@@ -253,41 +291,64 @@ RequestDecoder ClusterRequestDecoder[] = {
 	ClusterRequestDecoderStop,
 };
 
-Request* ClusterRequestDecoderGetObjectServiceMapLatestVersion(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
-        return NULL;
+Request* ClusterRequestDecoderGetObjectServiceMapLatestVersion(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
+        ClusterGetObjectServiceMapLatestVersionRequest *req = (ClusterGetObjectServiceMapLatestVersionRequest*)buffer;
+        if (buff_len < sizeof(*req)) return NULL;
+        *consume_len = sizeof(*req);
+        *free_req = false;
+        return &req->super;
 }
-Request* ClusterRequestDecoderGetLatestObjectServiceMap(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
+Request* ClusterRequestDecoderGetLatestObjectServiceMap(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
+        ClusterGetLatestObjectServiceMapRequest *req = (ClusterGetLatestObjectServiceMapRequest*)buffer;
+        if (buff_len < sizeof(*req)) return NULL;
+        *consume_len = sizeof(*req);
+        *free_req = false;
+        return &req->super;
+}
+
+Request* ClusterRequestDecoderAddObjectService(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
+        // TODO
         return NULL;
 }
 
-Request* ClusterRequestDecoderAddObjectService(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
+Request* ClusterRequestDecoderRemoveObjectService(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
+        // TODO
         return NULL;
 }
 
-Request* ClusterRequestDecoderRemoveObjectService(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
+Request* ClusterRequestDecoderKeepAliveObjectService(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
+        ClusterKeepAliveObjectServiceRequest *req = (ClusterKeepAliveObjectServiceRequest*)buffer;
+        if (buff_len < sizeof(*req)) return NULL;
+        *consume_len = sizeof(*req);
+        *free_req = false;
+        return &req->super;
+}
+
+Request* ClusterRequestDecoderKeepAliveClient(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
+        ClusterKeepAliveClientRequest *req = (ClusterKeepAliveClientRequest*)buffer;
+        if (buff_len < sizeof(*req)) return NULL;
+        *consume_len = sizeof(*req);
+        *free_req = false;
+        return &req->super;
+}
+
+Request* ClusterRequestDecoderGetObjectServiceMapChangeLog(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
+        // TODO
         return NULL;
 }
 
-Request* ClusterRequestDecoderKeepAliveObjectService(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
-        return NULL;
+Request* ClusterRequestDecoderStatus(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
+        ClusterStatusRequest *req = (ClusterStatusRequest*)buffer;
+        if (buff_len < sizeof(*req)) return NULL;
+        *consume_len = sizeof(*req);
+        *free_req = false;
+        return &req->super;
 }
 
-Request* ClusterRequestDecoderKeepAliveClient(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
-        return NULL;
-}
-
-Request* ClusterRequestDecoderGetObjectServiceMapChangeLog(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
-        return NULL;
-}
-
-Request* ClusterRequestDecoderStatus(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
-        return NULL;
-}
-
-Request* ClusterRequestDecoderStop(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
+Request* ClusterRequestDecoderStop(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
         ClusterStopRequest *req = (ClusterStopRequest*)buffer;
-        if (buff_len < sizeof(req)) return NULL;
-        *consume_len = sizeof(req);
+        if (buff_len < sizeof(*req)) return NULL;
+        *consume_len = sizeof(*req);
         *free_req = false;
         return &req->super;
 }
@@ -304,42 +365,107 @@ ResponseEncoder ClusterResponseEncoder[] = {
 	ClusterResponseEncoderStop,
 };
 
-bool ClusterResponseEncoderGetObjectServiceMapLatestVersion(Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
+bool ClusterResponseEncoderGetObjectServiceMapLatestVersion(Connection *conn_p, Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
+        ClusterGetObjectServiceMapLatestVersionResponse *resp1 = (ClusterGetObjectServiceMapLatestVersionResponse*)resp;
+        *buffer = (char *)resp1;
+        *buff_len = sizeof(*resp1);
+        *free_resp = false;
         return true;
 }
 
-bool ClusterResponseEncoderGetLatestObjectServiceMap(Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
+bool ClusterResponseEncoderGetLatestObjectServiceMap(Connection *conn_p, Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
+        ClusterGetLatestObjectServiceMapResponse *resp1 = (ClusterGetLatestObjectServiceMapResponse*)resp;
+        Socket* socket = conn_p->m->getSocket(conn_p);
+        Server* server = socket->m->getContext(socket);
+        ServerContextMon *sctx = server->m->getContext(server);
+        ClusterMap *cmap = &sctx->clusterMap;
+        char *os_map_buffer, *buf;
+        ssize_t header_len, os_map_buffer_len;
+
+        header_len = sizeof(int8_t) + sizeof(uint32_t);
+        os_map_buffer_len = cmap->m->dumpObjectServiceMapLength(resp1->os_map);
+        buf = malloc(header_len + os_map_buffer_len);
+        *buffer = buf;
+        *buff_len = header_len + os_map_buffer_len;
+        os_map_buffer = buf + header_len;
+
+        bool rc = cmap->m->dumpObjectServiceMap(resp1->os_map, os_map_buffer, os_map_buffer_len);
+        if (rc == false) {
+                free(buf);
+                return rc;
+        }
+        *(int8_t*)buf = resp->error_id; buf += 1;
+        *(uint32_t*)buf = resp->sequence;
+
+        *free_resp = true;
         return true;
 }
 
-bool ClusterResponseEncoderAddObjectService(Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
+bool ClusterResponseEncoderAddObjectService(Connection *conn_p, Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
+        // TODO
         return true;
 }
 
-bool ClusterResponseEncoderRemoveObjectService(Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
+bool ClusterResponseEncoderRemoveObjectService(Connection *conn_p, Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
+        // TODO
         return true;
 }
 
-bool ClusterResponseEncoderKeepAliveObjectService(Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
+bool ClusterResponseEncoderKeepAliveObjectService(Connection *conn_p, Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
+        ClusterKeepAliveObjectServiceResponse *resp1 = (ClusterKeepAliveObjectServiceResponse*)resp;
+        *buffer = (char *)resp1;
+        *buff_len = sizeof(*resp1);
+        *free_resp = false;
         return true;
 }
 
-bool ClusterResponseEncoderKeepAliveClient(Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
+bool ClusterResponseEncoderKeepAliveClient(Connection *conn_p, Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
+        ClusterKeepAliveClientResponse *resp1 = (ClusterKeepAliveClientResponse*)resp;
+        *buffer = (char *)resp1;
+        *buff_len = sizeof(*resp1);
+        *free_resp = false;
         return true;
 }
 
-bool ClusterResponseEncoderGetObjectServiceMapChangeLog(Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
+bool ClusterResponseEncoderGetObjectServiceMapChangeLog(Connection *conn_p, Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
+        // TODO
         return true;
 }
 
-bool ClusterResponseEncoderStatus(Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
+bool ClusterResponseEncoderStatus(Connection *conn_p, Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
+        ClusterStatusResponse *resp1 = (ClusterStatusResponse*)resp;
+        Socket* socket = conn_p->m->getSocket(conn_p);
+        Server* server = socket->m->getContext(socket);
+        ServerContextMon *sctx = server->m->getContext(server);
+        ClusterMap *cmap = &sctx->clusterMap;
+        char *os_map_buffer, *buf;
+        ssize_t header_len, os_map_buffer_len;
+
+        header_len = sizeof(int8_t) + sizeof(uint32_t) + sizeof(uint64_t) * 3;
+        os_map_buffer_len = cmap->m->dumpObjectServiceMapLength(resp1->os_map);
+        buf = malloc(header_len + os_map_buffer_len);
+        *buffer = buf;
+        *buff_len = header_len + os_map_buffer_len;
+        os_map_buffer = buf + header_len;
+
+        bool rc = cmap->m->dumpObjectServiceMap(resp1->os_map, os_map_buffer, os_map_buffer_len);
+        if (rc == false) {
+                free(buf);
+                return rc;
+        }
+        *(int8_t*)buf = resp->error_id; buf += 1;
+        *(uint32_t*)buf = resp->sequence; buf += 4;
+        *(uint64_t*)buf = resp1->total_objects; buf += 8;
+        *(uint64_t*)buf = resp1->used; buf += 8;
+        *(uint64_t*)buf = resp1->free; buf += 8;
+        *free_resp = true;
         return true;
 }
 
-bool ClusterResponseEncoderStop(Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
+bool ClusterResponseEncoderStop(Connection *conn_p, Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
         ClusterStopResponse *resp1 = (ClusterStopResponse*)resp;
         *buffer = (char *)resp1;
-        *buff_len = sizeof(resp1);
+        *buff_len = sizeof(*resp1);
         *free_resp = false;
         return true;
 }

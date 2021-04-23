@@ -16,15 +16,15 @@ extern void FooActionList(SRequest *);
 
 extern Action FooActions[];
 
-extern Request* FooRequestDecoderGet(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req);
-extern Request* FooRequestDecoderPut(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req);
-extern Request* FooRequestDecoderList(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req);
+extern Request* FooRequestDecoderGet(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_req);
+extern Request* FooRequestDecoderPut(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_req);
+extern Request* FooRequestDecoderList(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_req);
 
 extern RequestDecoder FooRequestDecoder[];
 
-bool FooResponseEncoderGet(Response *resp, char **buffer, size_t *buff_len, bool *free_resp);
-bool FooResponseEncoderPut(Response *resp, char **buffer, size_t *buff_len, bool *free_resp);
-bool FooResponseEncoderList(Response *resp, char **buffer, size_t *buff_len, bool *free_resp);
+bool FooResponseEncoderGet(Connection *conn_p, Response *resp, char **buffer, size_t *buff_len, bool *free_resp);
+bool FooResponseEncoderPut(Connection *conn_p, Response *resp, char **buffer, size_t *buff_len, bool *free_resp);
+bool FooResponseEncoderList(Connection *conn_p, Response *resp, char **buffer, size_t *buff_len, bool *free_resp);
 
 extern ResponseEncoder FooResponseEncoder[];
 
