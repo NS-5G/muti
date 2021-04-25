@@ -9,8 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <cluster/ClusterMap.h>
-
+#include "ClusterMap.h"
 #include "ClusterMapPrivate.h"
 
 typedef struct ClusterMapClientPrivate {

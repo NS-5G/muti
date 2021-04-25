@@ -5,14 +5,14 @@
  *      Author: Zhen Xiong
  */
 
+#include "ClusterMap.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 #include <assert.h>
 #include <unistd.h>
-
-#include <cluster/ClusterMap.h>
 
 #include "ClusterMapPrivate.h"
 
@@ -122,17 +122,20 @@ void clusterMapFreeOSMap(ObjectServiceMap *os_map) {
                         if (os->bset_ids != NULL) free(os->bset_ids);
                         free(os);
                 }
+                os_map->os_map.m->clear(&os_map->os_map, NULL);
+                os_map->os_map.m->destroy(&os_map->os_map);
         }
 }
 
-bool clusterMapParseObjectServiceMap(ObjectServiceMap *os_map,  char *buffer, ssize_t buf_len) {
+bool clusterMapParseObjectServiceMap(ObjectServiceMap *os_map,  char *buffer, ssize_t buf_len, ssize_t *consume_len) {
         char *buf = buffer;
         ssize_t len = 0;
         uint32_t i, j;
 
         os_map->bset = NULL;
         listHeadInit(&os_map->object_service_list);
-        os_map->status = ObjectServiceMapStatus_Updating;
+        os_map->status = ObjectServiceMapStatus_Normal;
+        clusterMapInitOSMap(os_map);
 
         len += 4; if (len > buf_len) { goto error_out;}
         os_map->version = *(uint32_t*)buf;
@@ -166,8 +169,6 @@ bool clusterMapParseObjectServiceMap(ObjectServiceMap *os_map,  char *buffer, ss
                         buf += 4;
                 }
         }
-
-        clusterMapInitOSMap(os_map);
 
         for (i = 0; i < os_map->object_service_length; i++) {
                 ObjectService *os = malloc(sizeof(*os));
@@ -203,7 +204,7 @@ bool clusterMapParseObjectServiceMap(ObjectServiceMap *os_map,  char *buffer, ss
                 assert(v == NULL);
                 listAddTail(&os->element, &os_map->object_service_list);
         }
-
+        if (consume_len) *consume_len = len;
         return true;
 error_out:
         clusterMapFreeOSMap(os_map);

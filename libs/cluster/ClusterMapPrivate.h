@@ -8,7 +8,7 @@
 #ifndef CLUSTER_CLUSTERMAPPRIVATE_H_
 #define CLUSTER_CLUSTERMAPPRIVATE_H_
 
-#include <cluster/ClusterMap.h>
+#include "ClusterMap.h"
 
 typedef struct ClusterMapPrivate {
 	ObjectServiceMap	*os_map;
@@ -24,7 +24,7 @@ extern void clusterMapDestroy(ClusterMap* obj);
 
 extern ssize_t clusterMapDumpObjectServiceMapLength(ObjectServiceMap *os_map);
 extern bool clusterMapDumpObjectServiceMap(ObjectServiceMap *os_map,  char *buffer, ssize_t buf_len);
-extern bool clusterMapParseObjectServiceMap(ObjectServiceMap *os_map,  char *buffer, ssize_t buf_len);
+extern bool clusterMapParseObjectServiceMap(ObjectServiceMap *os_map,  char *buffer, ssize_t buf_len, ssize_t *);
 extern void clusterMapInitOSMap(ObjectServiceMap *os_map);
 extern void clusterMapFreeOSMap(ObjectServiceMap *os_map);
 

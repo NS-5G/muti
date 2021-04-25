@@ -23,6 +23,7 @@
 typedef struct ClientPrivate {
         ClientParam             param;
         Connection              *conn;
+        void                    *context;
         Socket                  socket;
         sem_t                   sem;
         volatile uint32_t       sequence;
@@ -216,7 +217,7 @@ static void clientReadCallback(Connection* conn_p, bool rc, void* buffer, size_t
                 if (resp->error_id) {
                         resp = ErrorResponseDecoder(buf, buf_len, &consume_len, &free_resp);
                 } else {
-                        resp = send_arg->decoder(buf, buf_len, &consume_len, &free_resp);
+                        resp = send_arg->decoder(conn_p, buf, buf_len, &consume_len, &free_resp);
                 }
                 if (resp) {
                         buf += consume_len;
@@ -317,7 +318,7 @@ static bool clientSendRequest(Client* this, Request* req, ClientSendCallback cal
         send_arg->sequence = req->sequence;
         send_arg->decoder = decoder;
 
-        bool rc = encoder(req, &send_arg->wbuf, &send_arg->wbuf_len, free_req);
+        bool rc = encoder(conn_p, req, &send_arg->wbuf, &send_arg->wbuf_len, free_req);
         if (rc == false) {
                 *free_req = true;
                 free(send_arg);
@@ -376,6 +377,11 @@ static bool clientSendRequestSync(Client* this, Request* req) {
 	return rc;
 }
 
+static void* clientGetContext(Client *this) {
+        ClientPrivate *priv_p = this->p;
+        return priv_p->context;
+}
+
 static void destroy(Client* this) {
         ClientPrivate *priv_p = this->p;
         int i;
@@ -393,6 +399,7 @@ static void destroy(Client* this) {
 static ClientMethod method = {
         .sendRequest = clientSendRequest,
 	.sendRequestSync = clientSendRequestSync,
+	.getContext = clientGetContext,
         .destroy = destroy,
 };
 
@@ -414,6 +421,7 @@ bool initClient(Client* this, ClientParam* param) {
                 pthread_mutex_init(lock, NULL);
                 listHeadInit(wlist);
         }
+        priv_p->context = param->context;
 
         SocketLinuxParam sparam;
         strcpy(sparam.super.host, param->host);

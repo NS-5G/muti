@@ -16,7 +16,7 @@ RequestEncoder FooRequestEncoder[] = {
                 FooRequestEncoderList,
 };
 
-bool FooRequestEncoderGet(Request *req, char **buffer, size_t *buff_len, bool *free_req) {
+bool FooRequestEncoderGet(Connection *conn_p, Request *req, char **buffer, size_t *buff_len, bool *free_req) {
 	FooGetRequest *req1 = (FooGetRequest*)req;
 	*buffer = (char*) req1;
 	*buff_len = sizeof(*req1);
@@ -24,7 +24,7 @@ bool FooRequestEncoderGet(Request *req, char **buffer, size_t *buff_len, bool *f
         return true;
 }
 
-bool FooRequestEncoderPut(Request *req, char **buffer, size_t *buff_len, bool *free_req) {
+bool FooRequestEncoderPut(Connection *conn_p, Request *req, char **buffer, size_t *buff_len, bool *free_req) {
 	FooPutRequest *req1 = (FooPutRequest*)req;
 	*buffer = (char*) req1;
 	*buff_len = sizeof(*req1) + req1->foo.path_length;
@@ -32,7 +32,7 @@ bool FooRequestEncoderPut(Request *req, char **buffer, size_t *buff_len, bool *f
         return true;
 }
 
-bool FooRequestEncoderList(Request *req, char **buffer, size_t *buff_len, bool *free_req) {
+bool FooRequestEncoderList(Connection *conn_p, Request *req, char **buffer, size_t *buff_len, bool *free_req) {
 	FooListRequest *req1 = (FooListRequest*)req;
 	*buffer = (char*) req1;
 	*buff_len = sizeof(*req1);
@@ -46,7 +46,15 @@ ResponseDecoder FooResponseDecoder[] = {
                 FooResponseDecoderList,
 };
 
-Response* FooResponseDecoderGet(char *buffer, size_t buff_len, size_t *consume_len, bool *free_resp) {
+Response* FooResponseDecoderGet(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_resp) {
+        Response *resp1 = (Response*)buffer;
+        if (sizeof(*resp1) > buff_len) return NULL;
+        if (resp1->error_id) {
+                *consume_len = sizeof(Response);
+                *free_resp = false;
+                return resp1;
+        }
+
 	FooGetResponse *resp = (FooGetResponse*)buffer;
 	size_t len = sizeof(*resp);
 	if (buff_len < len) return NULL;
@@ -57,7 +65,15 @@ Response* FooResponseDecoderGet(char *buffer, size_t buff_len, size_t *consume_l
 	return &resp->super;
 }
 
-Response* FooResponseDecoderPut(char *buffer, size_t buff_len, size_t *consume_len, bool *free_resp) {
+Response* FooResponseDecoderPut(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_resp) {
+        Response *resp1 = (Response*)buffer;
+        if (sizeof(*resp1) > buff_len) return NULL;
+        if (resp1->error_id) {
+                *consume_len = sizeof(Response);
+                *free_resp = false;
+                return resp1;
+        }
+
 	FooPutResponse *resp = (FooPutResponse*)buffer;
 	size_t len = sizeof(*resp);
 	if (buff_len < len) return NULL;
@@ -66,7 +82,15 @@ Response* FooResponseDecoderPut(char *buffer, size_t buff_len, size_t *consume_l
         return &resp->super;
 }
 
-Response* FooResponseDecoderList(char *buffer, size_t buff_len, size_t *consume_len, bool *free_resp) {
+Response* FooResponseDecoderList(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_resp) {
+        Response *resp1 = (Response*)buffer;
+        if (sizeof(*resp1) > buff_len) return NULL;
+        if (resp1->error_id) {
+                *consume_len = sizeof(Response);
+                *free_resp = false;
+                return resp1;
+        }
+
 	FooListResponse *resp = malloc(sizeof(*resp));
 	listHeadInit(&resp->foo_head);
 

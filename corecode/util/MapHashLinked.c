@@ -118,7 +118,7 @@ static void clear(Map *this, void** values) {
         for (i = 0; i < priv->param.slot_size; i++) {
                 slot = &priv->slots[i];
                 listForEachEntrySafe(item, item1, slot, element) {
-                        values[j++] = item->value;
+                        if (values) values[j++] = item->value;
                         listDel(&item->element);
                         free(item);
                 }

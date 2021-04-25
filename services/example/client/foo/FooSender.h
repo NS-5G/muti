@@ -10,15 +10,15 @@
 
 #include <client/RequestSender.h>
 
-extern Response* FooResponseDecoderGet(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req);
-extern Response* FooResponseDecoderPut(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req);
-extern Response* FooResponseDecoderList(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req);
+extern Response* FooResponseDecoderGet(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_req);
+extern Response* FooResponseDecoderPut(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_req);
+extern Response* FooResponseDecoderList(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_req);
 
 extern ResponseDecoder FooResponseDecoder[];
 
-bool FooRequestEncoderGet(Request *resp, char **buffer, size_t *buff_len, bool *free_resp);
-bool FooRequestEncoderPut(Request *resp, char **buffer, size_t *buff_len, bool *free_resp);
-bool FooRequestEncoderList(Request *resp, char **buffer, size_t *buff_len, bool *free_resp);
+bool FooRequestEncoderGet(Connection *conn_p, Request *resp, char **buffer, size_t *buff_len, bool *free_resp);
+bool FooRequestEncoderPut(Connection *conn_p, Request *resp, char **buffer, size_t *buff_len, bool *free_resp);
+bool FooRequestEncoderList(Connection *conn_p, Request *resp, char **buffer, size_t *buff_len, bool *free_resp);
 
 extern RequestEncoder FooRequestEncoder[];
 

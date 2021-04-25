@@ -12,11 +12,12 @@
 #include <stdbool.h>
 
 #include <res/Resource.h>
+#include <network/Connection.h>
 
 typedef struct RequestSender RequestSender;
 
-typedef Response* (*ResponseDecoder)(char *buffer, size_t buff_len, size_t *consume_len, bool *free_resp);
-typedef bool (*RequestEncoder)(Request *req, char **buffer, size_t *buff_len, bool *free_req);
+typedef Response* (*ResponseDecoder)(Connection *, char *buffer, size_t buff_len, size_t *consume_len, bool *free_resp);
+typedef bool (*RequestEncoder)(Connection *, Request *req, char **buffer, size_t *buff_len, bool *free_req);
 
 struct RequestSender {
         int             id;
@@ -25,5 +26,18 @@ struct RequestSender {
 };
 
 extern Response* ErrorResponseDecoder(char *buffer, size_t buff_len, size_t *consume_len, bool *free_resp);
+
+#define SENDER_RESPONSE_DECODER(type)  Response *resp = (Response*)buffer; \
+        if (sizeof(*resp) > buff_len) return NULL; \
+        if (resp->error_id) { \
+                *consume_len = sizeof(Response); \
+                *free_resp = false; \
+                return resp; \
+        } \
+        type *resp1 = (type*)buffer; \
+        if (sizeof(*resp1) > buff_len) return NULL; \
+        *consume_len = sizeof(*resp1); \
+        *free_resp = false; \
+        return &resp1->super;
 
 #endif /* CLIENT_SENDER_REQUESTSENDER_H_ */

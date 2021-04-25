@@ -84,7 +84,7 @@ typedef struct ClusterMapMethod {
 	void                    (*putObjectServiceMap)(ClusterMap*, ObjectServiceMap *);
 	ssize_t                 (*dumpObjectServiceMapLength)(ObjectServiceMap *);
 	bool                    (*dumpObjectServiceMap)(ObjectServiceMap *,  char *, ssize_t);
-	bool                    (*parseObjectServiceMap)(ObjectServiceMap *,  char *, ssize_t);
+	bool                    (*parseObjectServiceMap)(ObjectServiceMap *,  char *, ssize_t, ssize_t*);
         void    		(*destroy)(ClusterMap*);
 } ClusterMapMethod;
 

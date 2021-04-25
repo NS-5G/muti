@@ -19,6 +19,7 @@ typedef void (*ClientSendCallback)(Client *, Response *, void *);
 typedef struct ClientMethod {
         bool    (*sendRequest)(Client*, Request*, ClientSendCallback, void *, bool *free_req);
         bool    (*sendRequestSync)(Client*, Request*);
+        void*   (*getContext)(Client *);
         void    (*destroy)(Client*);
 } ClientMethod;
 
@@ -35,6 +36,7 @@ typedef struct ClientParam {
         char            host[NETWORK_HOST_LEN + 1];
         int             port;
         size_t          read_buffer_size;
+        void            *context;
 } ClientParam;
 
 bool initClient(Client*, ClientParam*);

@@ -12,11 +12,12 @@
 #include <string.h>
 #include <assert.h>
 
-#include <cluster/ClusterMap.h>
 #include <util/FileUtil.h>
 #include <Log.h>
 #include <util/cJSON.h>
 #include <util/Map.h>
+
+#include "ClusterMap.h"
 #include "ClusterMapPrivate.h"
 
 #define MON_OBJECT_SERVICE_MAP_BIN_PATH "./mon_object_service_map.bin"
@@ -221,7 +222,7 @@ bool initClusterMapMon(ClusterMap* obj, ClusterMapParam* param) {
                 }
 	        free(buffer);
 	} else {
-	        rc = clusterMapParseObjectServiceMap(priv_p->super.os_map, buffer, buf_len);
+	        rc = clusterMapParseObjectServiceMap(priv_p->super.os_map, buffer, buf_len, NULL);
 	        if (rc == false) {
 	                free(buffer);
 	                goto error_out;
