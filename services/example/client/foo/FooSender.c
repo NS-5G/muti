@@ -66,20 +66,7 @@ Response* FooResponseDecoderGet(Connection *conn_p, char *buffer, size_t buff_le
 }
 
 Response* FooResponseDecoderPut(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_resp) {
-        Response *resp1 = (Response*)buffer;
-        if (sizeof(*resp1) > buff_len) return NULL;
-        if (resp1->error_id) {
-                *consume_len = sizeof(Response);
-                *free_resp = false;
-                return resp1;
-        }
-
-	FooPutResponse *resp = (FooPutResponse*)buffer;
-	size_t len = sizeof(*resp);
-	if (buff_len < len) return NULL;
-	*consume_len = len;
-	*free_resp = false;
-        return &resp->super;
+        SENDER_RESPONSE_DECODER(FooPutResponse);
 }
 
 Response* FooResponseDecoderList(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_resp) {
