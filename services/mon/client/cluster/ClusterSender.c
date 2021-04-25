@@ -12,11 +12,21 @@
 #include <Log.h>
 
 Response* ClusterResponseDecoderGetObjectServiceMapLatestVersion(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
-        return NULL;
+        ClusterGetObjectServiceMapLatestVersionResponse *resp1 = (ClusterGetObjectServiceMapLatestVersionResponse*)buffer;
+        if (sizeof(*resp1) > buff_len) return NULL;
+        *consume_len = sizeof(*resp1);
+        *free_req = false;
+        return &resp1->super;
 }
 
 Response* ClusterResponseDecoderGetLatestObjectServiceMap(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
-        return NULL;
+	// TODO
+	return NULL;
+//        ClusterGetLatestObjectServiceMapResponse *resp1 = (ClusterGetLatestObjectServiceMapResponse*)buffer;
+//        if (sizeof(*resp1) > buff_len) return NULL;
+//        *consume_len = sizeof(*resp1);
+//        *free_req = false;
+//        return &resp1->super;
 }
 
 Response* ClusterResponseDecoderAddObjectService(char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
