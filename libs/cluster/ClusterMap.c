@@ -16,6 +16,10 @@
 
 #include "ClusterMapPrivate.h"
 
+char *OSStatusMap[] = {
+        "Online","Syncing", "Offine", "ReadyToJoin", "Error"
+};
+
 static int osInt32KeyCompare(void *key, void *key1) {
         return *(uint32_t *)key - *(uint32_t *)key1;
 }
@@ -35,7 +39,8 @@ void clusterMapInitOSMap(ObjectServiceMap *os_map) {
                 i++;
         }
         mparam.slot_size = ssize;
-        initMapHashLinked(&os_map->os_map, &mparam);
+        bool rc = initMapHashLinked(&os_map->os_map, &mparam);
+        assert(rc);
 }
 
 ssize_t clusterMapDumpObjectServiceMapLength(ObjectServiceMap *os_map) {
@@ -135,7 +140,6 @@ bool clusterMapParseObjectServiceMap(ObjectServiceMap *os_map,  char *buffer, ss
         os_map->bset = NULL;
         listHeadInit(&os_map->object_service_list);
         os_map->status = ObjectServiceMapStatus_Normal;
-        clusterMapInitOSMap(os_map);
 
         len += 4; if (len > buf_len) { goto error_out;}
         os_map->version = *(uint32_t*)buf;
@@ -153,6 +157,7 @@ bool clusterMapParseObjectServiceMap(ObjectServiceMap *os_map,  char *buffer, ss
         os_map->object_service_length = *(uint32_t*)buf;
         buf += 4;
 
+        clusterMapInitOSMap(os_map);
         os_map->bset = calloc(sizeof(BSet), os_map->bset_length);
         for (i = 0; i < os_map->bset_length; i++) {
                 BSet *bset = &os_map->bset[i];

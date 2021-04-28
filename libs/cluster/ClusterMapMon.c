@@ -173,9 +173,6 @@ static void destroy(ClusterMap* obj) {
 static ClusterMapMethod method = {
 	.getObjectServiceMap = clusterMapGetObjectServiceMap,
 	.putObjectServiceMap = clusterMapPutObjectServiceMap,
-	.parseObjectServiceMap = clusterMapParseObjectServiceMap,
-	.dumpObjectServiceMap = clusterMapDumpObjectServiceMap,
-	.dumpObjectServiceMapLength = clusterMapDumpObjectServiceMapLength,
         .destroy = destroy,
 };
 

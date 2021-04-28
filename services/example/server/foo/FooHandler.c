@@ -57,7 +57,7 @@ void FooActionPut(SRequest *req) {
 
         resp = calloc(1, sizeof(*resp));
         resp->sequence = request->super.sequence;
-        resp->error_id = (int8_t)sdao->m->putFoo(sdao, foo);
+        resp->error_id = (int32_t)sdao->m->putFoo(sdao, foo);
 
         req->response = resp;
         req->action_callback(req);
@@ -148,9 +148,9 @@ bool FooResponseEncoderList(Connection *conn_p, Response *resp, char **buffer, s
         buf = malloc(sizeof(Response) + sizeof(list_resp->length) + list_resp->length * (sizeof(Foo) + 1024));
         *buffer = buf;
 
-        *(int8_t*)buf = resp->error_id;
-        buf += 1;
-        buf_len += 1;
+        *(int32_t*)buf = resp->error_id;
+        buf += 4;
+        buf_len += 4;
 
         *(uint32_t*)buf = resp->sequence;
         buf += 4;

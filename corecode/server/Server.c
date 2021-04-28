@@ -98,7 +98,7 @@ static void serverDoActionCallback(SRequest *reqw) {
         bool free_resp;
 
         assert(reqw->response != NULL);
-        int8_t error_id = reqw->response->error_id;
+        int32_t error_id = reqw->response->error_id;
         if (error_id == 0) {
                 RequestHandler *res = reqw->req_handler;
                 res->response_encoders[reqw->request->request_id]

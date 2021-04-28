@@ -12,7 +12,7 @@
 #include <stdio.h>
 
 typedef struct Response {
-        int8_t          error_id;
+        int32_t         error_id;
         uint32_t        sequence;
 } Response;
 

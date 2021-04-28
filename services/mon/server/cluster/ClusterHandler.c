@@ -375,26 +375,22 @@ bool ClusterResponseEncoderGetObjectServiceMapLatestVersion(Connection *conn_p, 
 
 bool ClusterResponseEncoderGetLatestObjectServiceMap(Connection *conn_p, Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
         ClusterGetLatestObjectServiceMapResponse *resp1 = (ClusterGetLatestObjectServiceMapResponse*)resp;
-        Socket* socket = conn_p->m->getSocket(conn_p);
-        Server* server = socket->m->getContext(socket);
-        ServerContextMon *sctx = server->m->getContext(server);
-        ClusterMap *cmap = &sctx->clusterMap;
         char *os_map_buffer, *buf;
         ssize_t header_len, os_map_buffer_len;
 
-        header_len = sizeof(int8_t) + sizeof(uint32_t);
-        os_map_buffer_len = cmap->m->dumpObjectServiceMapLength(resp1->os_map);
+        header_len = sizeof(int32_t) + sizeof(uint32_t);
+        os_map_buffer_len = clusterMapDumpObjectServiceMapLength(resp1->os_map);
         buf = malloc(header_len + os_map_buffer_len);
         *buffer = buf;
         *buff_len = header_len + os_map_buffer_len;
         os_map_buffer = buf + header_len;
 
-        bool rc = cmap->m->dumpObjectServiceMap(resp1->os_map, os_map_buffer, os_map_buffer_len);
+        bool rc = clusterMapDumpObjectServiceMap(resp1->os_map, os_map_buffer, os_map_buffer_len);
         if (rc == false) {
                 free(buf);
                 return rc;
         }
-        *(int8_t*)buf = resp->error_id; buf += 1;
+        *(int32_t*)buf = resp->error_id; buf += 4;
         *(uint32_t*)buf = resp->sequence;
 
         *free_resp = true;
@@ -434,27 +430,24 @@ bool ClusterResponseEncoderGetObjectServiceMapChangeLog(Connection *conn_p, Resp
 
 bool ClusterResponseEncoderStatus(Connection *conn_p, Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
         ClusterStatusResponse *resp1 = (ClusterStatusResponse*)resp;
-        Socket* socket = conn_p->m->getSocket(conn_p);
-        Server* server = socket->m->getContext(socket);
-        ServerContextMon *sctx = server->m->getContext(server);
-        ClusterMap *cmap = &sctx->clusterMap;
         char *os_map_buffer, *buf;
         ssize_t header_len, os_map_buffer_len;
 
-        header_len = sizeof(int8_t) + sizeof(uint32_t) + sizeof(uint64_t) * 3;
-        os_map_buffer_len = cmap->m->dumpObjectServiceMapLength(resp1->os_map);
+        header_len = sizeof(int32_t) + sizeof(uint32_t) + sizeof(uint64_t) * 3;
+        os_map_buffer_len = clusterMapDumpObjectServiceMapLength(resp1->os_map);
         buf = malloc(header_len + os_map_buffer_len);
         *buffer = buf;
         *buff_len = header_len + os_map_buffer_len;
         os_map_buffer = buf + header_len;
 
-        bool rc = cmap->m->dumpObjectServiceMap(resp1->os_map, os_map_buffer, os_map_buffer_len);
+        bool rc = clusterMapDumpObjectServiceMap(resp1->os_map, os_map_buffer, os_map_buffer_len);
         if (rc == false) {
                 free(buf);
                 return rc;
         }
-        *(int8_t*)buf = resp->error_id; buf += 1;
+        *(int32_t*)buf = resp->error_id; buf += 4;
         *(uint32_t*)buf = resp->sequence; buf += 4;
+        printf("resp->sequence:%u %lu\n", resp->sequence, *buff_len);
         *(uint64_t*)buf = resp1->total_objects; buf += 8;
         *(uint64_t*)buf = resp1->used; buf += 8;
         *(uint64_t*)buf = resp1->free; buf += 8;
@@ -466,6 +459,7 @@ bool ClusterResponseEncoderStop(Connection *conn_p, Response *resp, char **buffe
         ClusterStopResponse *resp1 = (ClusterStopResponse*)resp;
         *buffer = (char *)resp1;
         *buff_len = sizeof(*resp1);
+        printf("resp->sequence:%u %lu\n", resp->sequence, *buff_len);
         *free_resp = false;
         return true;
 }

@@ -29,21 +29,18 @@ Response* ClusterResponseDecoderGetLatestObjectServiceMap(Connection *conn_p, ch
         }
 
         resp1 = malloc(sizeof(*resp));
-        Socket *socket = conn_p->m->getSocket(conn_p);
-        Client *client = socket->m->getContext(socket);
-        ClusterMap *cmap = client->m->getContext(client);
         ssize_t len = 0, len1;
 
-        len += 1; if (buff_len < len) goto err_out;
-        resp1->super.error_id = *(int8_t*)buffer;
-        buffer += 1;
+        len += 4; if (buff_len < len) goto err_out;
+        resp1->super.error_id = *(int32_t*)buffer;
+        buffer += 4;
 
         len += 4; if (buff_len < len) goto err_out;
         resp1->super.sequence = *(uint32_t*)buffer;
         buffer += 4;
 
         os_map = calloc(1, sizeof(*os_map));
-        bool rc = cmap->m->parseObjectServiceMap(os_map,  buffer, (ssize_t)buff_len - len, &len1);
+        bool rc = clusterMapParseObjectServiceMap(os_map,  buffer, (ssize_t)buff_len - len, &len1);
         if (rc == false) goto err_out;
         resp1->os_map = os_map;
         *consume_len = (size_t) len + len1;
@@ -89,15 +86,12 @@ Response* ClusterResponseDecoderStatus(Connection *conn_p, char *buffer, size_t 
                 return resp;
         }
 
-        resp1 = malloc(sizeof(*resp));
-        Socket *socket = conn_p->m->getSocket(conn_p);
-        Client *client = socket->m->getContext(socket);
-        ClusterMap *cmap = client->m->getContext(client);
+        resp1 = malloc(sizeof(*resp1));
         ssize_t len = 0, len1;
 
-        len += 1; if (buff_len < len) goto err_out;
-        resp1->super.error_id = *(int8_t*)buffer;
-        buffer += 1;
+        len += 4; if (buff_len < len) goto err_out;
+        resp1->super.error_id = *(int32_t*)buffer;
+        buffer += 4;
 
         len += 4; if (buff_len < len) goto err_out;
         resp1->super.sequence = *(uint32_t*)buffer;
@@ -115,8 +109,8 @@ Response* ClusterResponseDecoderStatus(Connection *conn_p, char *buffer, size_t 
         resp1->free = *(uint32_t*)buffer;
         buffer += 8;
 
-        os_map = calloc(1, sizeof(*os_map));
-        bool rc = cmap->m->parseObjectServiceMap(os_map,  buffer, (ssize_t)buff_len - len, &len1);
+        os_map = calloc(1, sizeof(ObjectServiceMap));
+        bool rc = clusterMapParseObjectServiceMap(os_map,  buffer, (ssize_t)buff_len - len, &len1);
         if (rc == false) goto err_out;
         resp1->os_map = os_map;
         *consume_len = (size_t) len + len1;

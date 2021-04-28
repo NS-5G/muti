@@ -352,8 +352,8 @@ static bool clientSendRequest(Client* this, Request* req, ClientSendCallback cal
 }
 
 typedef struct ClientSendReqSyncCbarg {
-	sem_t  sem;
-	int8_t error_id;
+	sem_t   sem;
+	int32_t error_id;
 } ClientSendReqSyncCbarg;
 
 static void clientSendRequestSyncCallbck(Client *this, Response *resp, void *p) {
@@ -362,12 +362,11 @@ static void clientSendRequestSyncCallbck(Client *this, Response *resp, void *p) 
 	sem_post(&cbargp->sem);
 }
 
-static bool clientSendRequestSync(Client* this, Request* req) {
+static bool clientSendRequestSync(Client* this, Request* req, bool *free_req) {
 	ClientSendReqSyncCbarg cbarg;
-	bool free_req;
 
 	sem_init(&cbarg.sem, 0, 0);
-	bool rc = clientSendRequest(this, req, clientSendRequestSyncCallbck, &cbarg, &free_req);
+	bool rc = clientSendRequest(this, req, clientSendRequestSyncCallbck, &cbarg, free_req);
 	if (rc == true) sem_wait(&cbarg.sem);
 	else return rc;
 	rc = cbarg.error_id == 0;
@@ -414,7 +413,7 @@ bool initClient(Client* this, ClientParam* param) {
         memcpy(&priv_p->param, param, sizeof(*param));
         priv_p->conn = NULL;
         sem_init(&priv_p->sem, 0, 0);
-        priv_p->sequence = 0;
+        priv_p->sequence = 1022;
         for (i = 0; i < CLIENT_WAITING_HASH_LEN; i++) {
                 wlist = &priv_p->waiting_hash_slots[i];
                 lock = &priv_p->waiting_hash_locks[i];

@@ -18,7 +18,7 @@ typedef void (*ClientSendCallback)(Client *, Response *, void *);
 
 typedef struct ClientMethod {
         bool    (*sendRequest)(Client*, Request*, ClientSendCallback, void *, bool *free_req);
-        bool    (*sendRequestSync)(Client*, Request*);
+        bool    (*sendRequestSync)(Client*, Request*, bool *);
         void*   (*getContext)(Client *);
         void    (*destroy)(Client*);
 } ClientMethod;

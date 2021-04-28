@@ -20,6 +20,8 @@ typedef enum ObjectServiceStatus {
 	ObjectServiceStatus_Error,
 } ObjectServiceStatus;
 
+extern char *OSStatusMap[];
+
 typedef struct BSet BSet;
 
 typedef struct ObjectService {
@@ -82,9 +84,6 @@ typedef struct ClusterMapMethod {
 	int			(*AddObjectService)(ClusterMap*, ObjectService*);
 	ObjectServiceMap* 	(*getObjectServiceMap)(ClusterMap*);
 	void                    (*putObjectServiceMap)(ClusterMap*, ObjectServiceMap *);
-	ssize_t                 (*dumpObjectServiceMapLength)(ObjectServiceMap *);
-	bool                    (*dumpObjectServiceMap)(ObjectServiceMap *,  char *, ssize_t);
-	bool                    (*parseObjectServiceMap)(ObjectServiceMap *,  char *, ssize_t, ssize_t*);
         void    		(*destroy)(ClusterMap*);
 } ClusterMapMethod;
 
@@ -118,5 +117,10 @@ typedef struct ClusterMapObjectServiceParam {
 } ClusterMapObjectServiceParam;
 
 bool initClusterMap(ClusterMap*, ClusterMapParam*);
+
+extern ssize_t clusterMapDumpObjectServiceMapLength(ObjectServiceMap *);
+extern bool clusterMapDumpObjectServiceMap(ObjectServiceMap *,  char *, ssize_t);
+extern bool clusterMapParseObjectServiceMap(ObjectServiceMap *,  char *, ssize_t, ssize_t*);
+extern void clusterMapFreeOSMap(ObjectServiceMap *os_map);
 
 #endif /* CLUSTER_CLUSTERMAP_H_ */

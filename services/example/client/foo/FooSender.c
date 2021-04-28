@@ -82,9 +82,9 @@ Response* FooResponseDecoderList(Connection *conn_p, char *buffer, size_t buff_l
 	listHeadInit(&resp->foo_head);
 
 	size_t len = 0;
-	len += 1; if (buff_len < len) goto err_out;
-	resp->super.error_id = *(int8_t*)buffer;
-	buffer += 1;
+	len += 4; if (buff_len < len) goto err_out;
+	resp->super.error_id = *(int32_t*)buffer;
+	buffer += 4;
 
 	len += 4; if (buff_len < len) goto err_out;
 	resp->super.sequence = *(uint32_t*)buffer;
