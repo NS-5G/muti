@@ -144,45 +144,43 @@ ResponseDecoder ClusterResponseDecoder[] = {
 		ClusterResponseDecoderStop,
 };
 
-bool ClusterRequestEncoderGetObjectServiceMapLatestVersion(Connection *conn_p, Request *resp, char **buffer, size_t *buff_len, bool *free_resp) {
-        return true;
+bool ClusterRequestEncoderGetObjectServiceMapLatestVersion(Connection *conn_p, Request *req, char **buffer, size_t *buff_len, bool *free_req) {
+	SENDER_REQUEST_ENCODER(ClusterGetObjectServiceMapLatestVersionRequest);
 }
 
-bool ClusterRequestEncoderGetLatestObjectServiceMap(Connection *conn_p, Request *resp, char **buffer, size_t *buff_len, bool *free_resp) {
-        return true;
+bool ClusterRequestEncoderGetLatestObjectServiceMap(Connection *conn_p, Request *req, char **buffer, size_t *buff_len, bool *free_req) {
+	SENDER_REQUEST_ENCODER(ClusterGetLatestObjectServiceMapRequest);
 }
 
-bool ClusterRequestEncoderAddObjectService(Connection *conn_p, Request *resp, char **buffer, size_t *buff_len, bool *free_resp) {
-        return true;
+bool ClusterRequestEncoderAddObjectService(Connection *conn_p, Request *req, char **buffer, size_t *buff_len, bool *free_req) {
+        // TODO
+	return true;
 }
 
-bool ClusterRequestEncoderRemoveObjectService(Connection *conn_p, Request *resp, char **buffer, size_t *buff_len, bool *free_resp) {
-        return true;
+bool ClusterRequestEncoderRemoveObjectService(Connection *conn_p, Request *req, char **buffer, size_t *buff_len, bool *free_req) {
+        // TODO
+	return true;
 }
 
-bool ClusterRequestEncoderKeepAliveObjectService(Connection *conn_p, Request *resp, char **buffer, size_t *buff_len, bool *free_resp) {
-        return true;
+bool ClusterRequestEncoderKeepAliveObjectService(Connection *conn_p, Request *req, char **buffer, size_t *buff_len, bool *free_req) {
+	SENDER_REQUEST_ENCODER(ClusterKeepAliveObjectServiceRequest);
 }
 
-bool ClusterRequestEncoderKeepAliveClient(Connection *conn_p, Request *resp, char **buffer, size_t *buff_len, bool *free_resp) {
-        return true;
+bool ClusterRequestEncoderKeepAliveClient(Connection *conn_p, Request *req, char **buffer, size_t *buff_len, bool *free_req) {
+	SENDER_REQUEST_ENCODER(ClusterKeepAliveClientRequest);
 }
 
-bool ClusterRequestEncoderGetObjectServiceMapChangeLog(Connection *conn_p, Request *resp, char **buffer, size_t *buff_len, bool *free_resp) {
-        return true;
+bool ClusterRequestEncoderGetObjectServiceMapChangeLog(Connection *conn_p, Request *req, char **buffer, size_t *buff_len, bool *free_req) {
+        // TODO
+	return true;
 }
 
-bool ClusterRequestEncoderStatus(Connection *conn_p, Request *resp, char **buffer, size_t *buff_len, bool *free_resp) {
-        return true;
+bool ClusterRequestEncoderStatus(Connection *conn_p, Request *req, char **buffer, size_t *buff_len, bool *free_req) {
+	SENDER_REQUEST_ENCODER(ClusterStatusRequest);
 }
 
 bool ClusterRequestEncoderStop(Connection *conn_p, Request *req, char **buffer, size_t *buff_len, bool *free_req) {
-        ClusterStopRequest *req1 = (ClusterStopRequest*)req;
-        *buffer = (char*) req1;
-        *buff_len = sizeof(*req1);
-        *free_req = false;
-        DLOG("ClusterRequestEncoderStop done!");
-        return true;
+        SENDER_REQUEST_ENCODER(ClusterStopRequest);
 }
 
 RequestEncoder ClusterRequestEncoder[] = {

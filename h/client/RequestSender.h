@@ -27,7 +27,8 @@ struct RequestSender {
 
 extern Response* ErrorResponseDecoder(char *buffer, size_t buff_len, size_t *consume_len, bool *free_resp);
 
-#define SENDER_RESPONSE_DECODER(type)  Response *resp = (Response*)buffer; \
+#define SENDER_RESPONSE_DECODER(type) \
+	Response *resp = (Response*)buffer; \
         if (sizeof(*resp) > buff_len) return NULL; \
         if (resp->error_id) { \
                 *consume_len = sizeof(Response); \
@@ -39,5 +40,12 @@ extern Response* ErrorResponseDecoder(char *buffer, size_t buff_len, size_t *con
         *consume_len = sizeof(*resp1); \
         *free_resp = false; \
         return &resp1->super;
+
+#define SENDER_REQUEST_ENCODER(type) \
+	type *req1 = (type*)req; \
+	*buffer = (char*) req1; \
+	*buff_len = sizeof(*req1); \
+	*free_req = false; \
+	return true;
 
 #endif /* CLIENT_SENDER_REQUESTSENDER_H_ */
