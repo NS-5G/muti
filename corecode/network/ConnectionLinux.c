@@ -15,7 +15,6 @@
 #include <assert.h>
 #include <unistd.h>
 
-#include "Object.h"
 #include "network/Connection.h"
 #include "Log.h"
 

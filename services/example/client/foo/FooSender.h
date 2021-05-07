@@ -5,8 +5,8 @@
  *      Author: Zhen Xiong
  */
 
-#ifndef CLIENT_SENDER_SAMPLEREQUESTSENDER_H_
-#define CLIENT_SENDER_SAMPLEREQUESTSENDER_H_
+#ifndef FooSENDER_H_
+#define FooSENDER_H_
 
 #include <client/RequestSender.h>
 
@@ -22,4 +22,4 @@ bool FooRequestEncoderList(Connection *conn_p, Request *resp, char **buffer, siz
 
 extern RequestEncoder FooRequestEncoder[];
 
-#endif /* CLIENT_SENDER_SAMPLEREQUESTSENDER_H_ */
+#endif /* FooSENDER_H_ */

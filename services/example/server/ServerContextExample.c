@@ -18,7 +18,7 @@ static ServerContextExampleMethod method = {
         .destroy = destroy,
 };
 
-bool initServerFooContext(ServerContextExample* this, ServerContextExampleParam* param) {
+bool initServerContextExample(ServerContextExample* this, ServerContextExampleParam* param) {
         FooDaoParam sd_param;
         bool rc;
 

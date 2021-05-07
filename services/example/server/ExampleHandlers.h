@@ -5,8 +5,8 @@
  *      Author: rick
  */
 
-#ifndef ServerRequestHandlers_H_
-#define ServerRequestHandlers_H_
+#ifndef ExampleHANDLERS_H_
+#define ExampleHANDLERS_H_
 
 #include <example/server/foo/FooHandler.h>
 #include "../share/ExampleResources.h"
@@ -16,4 +16,4 @@ static RequestHandler ExampleHandlers[] = {
 };
 
 
-#endif /* ServerRequestHandlers_H_ */
+#endif /* ExampleHANDLERS_H_ */

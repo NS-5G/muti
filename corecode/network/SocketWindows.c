@@ -12,7 +12,6 @@
 #include <pthread.h>
 
 #include "Log.h"
-#include "Object.h"
 #include "network/Connection.h"
 #include "network/Socket.h"
 

@@ -8,7 +8,9 @@
 #ifndef MAP_H_
 #define MAP_H_
 
-#include "Object.h"
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 typedef int (*MapKeyCompare)(void *key, void *key1);
 typedef uint64_t (*MapKeyHash)(void *key);

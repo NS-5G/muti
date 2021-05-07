@@ -5,8 +5,8 @@
  *      Author: root
  */
 
-#ifndef CLIENT_SENDER_REQUESTSENDERS_H_
-#define CLIENT_SENDER_REQUESTSENDERS_H_
+#ifndef ExampleSENDERS_H_
+#define ExampleSENDERS_H_
 #include <example/client/foo/FooSender.h>
 #include <example/share/ExampleResources.h>
 
@@ -14,4 +14,4 @@ static RequestSender ExampleSenders[] = {
                 {ResourceIdFoo, FooRequestEncoder, FooResponseDecoder},
 };
 
-#endif /* CLIENT_SENDER_REQUESTSENDERS_H_ */
+#endif /* ExampleSENDERS_H_ */

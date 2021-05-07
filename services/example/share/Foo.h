@@ -5,8 +5,8 @@
  *      Author: root
  */
 
-#ifndef RES_SAMPLE_H_
-#define RES_SAMPLE_H_
+#ifndef RES_Foo_H_
+#define RES_Foo_H_
 
 #include <res/Resource.h>
 #include <util/LinkedList.h>
@@ -61,4 +61,4 @@ typedef struct FooListResponse {
         };
 } FooListResponse;
 
-#endif /* RES_SAMPLE_H_ */
+#endif /* RES_Foo_H_ */

@@ -8,7 +8,10 @@
 #ifndef NETWORK_SOCKET_H_
 #define NETWORK_SOCKET_H_
 
-#include "Object.h"
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+
 #include "Connection.h"
 #include "util/ThreadPool.h"
 

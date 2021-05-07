@@ -218,7 +218,7 @@ int ServiceMonStatus(int argv, char **argvs) {
         rc = client.m->sendRequest(&client, &sreq->super, ServiceClientStatusSendCallback, &sem, &free_req);
         if (free_req) free(sreq);
         if (rc == false) {
-                ELOG("Error send stop request.");
+                ELOG("Error send status request.");
         }
         sem_wait(&sem);
         DLOG("Exiting...");
@@ -243,7 +243,7 @@ int ServiceMonDo(int argv, char **argvs) {
 		 }
 	} else {
 wrong_cmd:
-		printf("Usage:./muti service mon <command>\n\n");
+		printf("Usage:./muti service mon <command> [host] [port]\n\n");
 		printf("    start    Start mon service.");
 		printf("    stop     Stop mon service.");
 		printf("    stat     Stat cluster.");

@@ -5,8 +5,8 @@
  *      Author: rick
  */
 
-#ifndef ServerRequestHandlers_H_
-#define ServerRequestHandlers_H_
+#ifndef MonHandlers_H_
+#define MonHandlers_H_
 
 #include <mon/server/cluster/ClusterHandler.h>
 #include "../share/MonResources.h"
@@ -16,4 +16,4 @@ static RequestHandler MonHandlers[] = {
 };
 
 
-#endif /* ServerRequestHandlers_H_ */
+#endif /* MonHandlers_H_ */

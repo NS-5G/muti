@@ -8,7 +8,10 @@
 #ifndef THREAD_POOL_H_
 #define THREAD_POOL_H_
 
-#include "Object.h"
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+
 #include "util/LinkedList.h"
 
 typedef struct Job Job;

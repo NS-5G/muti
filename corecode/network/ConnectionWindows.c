@@ -14,7 +14,6 @@
 #include <string.h>
 #include <assert.h>
 
-#include "Object.h"
 #include "network/Connection.h"
 #include "Log.h"
 

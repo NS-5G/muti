@@ -5,8 +5,8 @@
  *      Author: root
  */
 
-#ifndef SERVER_SERVERSAMPLECONTEXT_H_
-#define SERVER_SERVERSAMPLECONTEXT_H_
+#ifndef SERVERCONTEXTExample_H_
+#define SERVERCONTEXTExample_H_
 #include <stdbool.h>
 
 #include "foo/dao/FooDao.h"
@@ -26,6 +26,6 @@ typedef struct ServerContextExampleParam {
 
 } ServerContextExampleParam;
 
-bool initServerFooContext(ServerContextExample*, ServerContextExampleParam*);
+bool initServerContextExample(ServerContextExample*, ServerContextExampleParam*);
 
-#endif /* SERVER_SERVERSAMPLECONTEXT_H_ */
+#endif /* SERVERCONTEXTExample_H_ */

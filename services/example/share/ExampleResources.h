@@ -5,11 +5,11 @@
  *      Author: Zhen Xiong
  */
 
-#ifndef SHARE_RESOURCES_H_
-#define SHARE_RESOURCES_H_
+#ifndef ExampleRESOURCES_H_
+#define ExampleRESOURCES_H_
 
-typedef enum {
+enum {
         ResourceIdFoo = 0
-} ResourceId;
+};
 
-#endif /* SHARE_RESOURCES_H_ */
+#endif /* ExampleRESOURCES_H_ */

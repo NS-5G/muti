@@ -32,7 +32,7 @@ int UtServer(int argv, char **argvs) {
         bool rc = initThreadPool(&work_tp, &param_tp);
         assert(rc == true);
 
-        rc = initServerFooContext(&scxt, &param_cxt);
+        rc = initServerContextExample(&scxt, &param_cxt);
         assert(rc == true);
 
         param.port = 10809;

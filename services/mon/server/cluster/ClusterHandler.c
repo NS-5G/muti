@@ -447,7 +447,6 @@ bool ClusterResponseEncoderStatus(Connection *conn_p, Response *resp, char **buf
         }
         *(int32_t*)buf = resp->error_id; buf += 4;
         *(uint32_t*)buf = resp->sequence; buf += 4;
-        printf("resp->sequence:%u %lu\n", resp->sequence, *buff_len);
         *(uint64_t*)buf = resp1->total_objects; buf += 8;
         *(uint64_t*)buf = resp1->used; buf += 8;
         *(uint64_t*)buf = resp1->free; buf += 8;

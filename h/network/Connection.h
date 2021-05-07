@@ -8,7 +8,9 @@
 #ifndef NETWORK_CONNECTION_H_
 #define NETWORK_CONNECTION_H_
 
-#include "Object.h"
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 typedef struct Socket Socket;
 typedef struct Connection Connection;

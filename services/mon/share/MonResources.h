@@ -8,8 +8,8 @@
 #ifndef SHARE_MON_RESOURCES_H_
 #define SHARE_MON_RESOURCES_H_
 
-typedef enum {
+enum {
         ResourceIdCluster = 0
-} ResourceId;
+};
 
 #endif /* SHARE_MON_RESOURCES_H_ */
