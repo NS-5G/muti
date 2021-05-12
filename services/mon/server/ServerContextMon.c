@@ -14,6 +14,7 @@
 static void destroy(ServerContextMon* this) {
 	ClusterMap *cmap = &this->clusterMap;
 	cmap->m->destroy(cmap);
+	sem_destroy(&this->stop_sem);
 }
 
 static ServerContextMonMethod method = {

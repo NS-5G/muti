@@ -70,10 +70,10 @@ typedef struct ObjectDeleteRequest {
         size_t          path_length;
         char            *path;
         char		data[];
-} ObjectPutRequest;
+} ObjectDeleteRequest;
 
 typedef struct ObjectDeleteResponse {
         Response        super;
-} ObjectPutResponse;
+} ObjectDeleteResponse;
 
 #endif /* RES_OBJECT_H_ */
