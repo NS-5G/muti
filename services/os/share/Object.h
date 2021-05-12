@@ -15,12 +15,11 @@ typedef enum {
         ObjectRequestIdGet = 0,
         ObjectRequestIdPut = 1,
         ObjectRequestIdList = 2,
+	ObjectRequestIdDelete = 3,
 } ObjectRequestId;
 
 typedef struct Object {
         ListElement     element;
-        int             id;
-        char            bucket[64];
         size_t          path_length;
         char            *path;
         size_t          size;
@@ -29,7 +28,9 @@ typedef struct Object {
 
 typedef struct ObjectGetRequest {
         Request         super;
-        int             id;
+        size_t          path_length;
+        char            *path;
+        char		data[];
 } ObjectGetRequest;
 
 typedef struct ObjectGetResponse {
@@ -48,8 +49,11 @@ typedef struct ObjectPutResponse {
 
 typedef struct ObjectListRequest {
         Request         super;
+        size_t          prefix_path_length;
+        char            *prefix_path;
         int32_t         page;
         int32_t         page_size;
+        char		data[];
 } ObjectListRequest;
 
 typedef struct ObjectListResponse {
@@ -60,5 +64,16 @@ typedef struct ObjectListResponse {
         	ListHead        *object_list;	// For encoder
         };
 } ObjectListResponse;
+
+typedef struct ObjectDeleteRequest {
+        Request         super;
+        size_t          path_length;
+        char            *path;
+        char		data[];
+} ObjectPutRequest;
+
+typedef struct ObjectDeleteResponse {
+        Response        super;
+} ObjectPutResponse;
 
 #endif /* RES_OBJECT_H_ */
