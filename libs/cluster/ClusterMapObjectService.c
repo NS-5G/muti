@@ -8,8 +8,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <semaphore.h>
+#include <assert.h>
 
 #include <util/FileUtil.h>
+#include <client/Client.h>
+#include <mon/client/MonSenders.h>
+#include <mon/share/Cluster.h>
+#include <Log.h>
 #include "ClusterMap.h"
 #include "ClusterMapPrivate.h"
 
@@ -18,12 +24,13 @@
 typedef struct ClusterMapObjectServicePrivate {
 	ClusterMapPrivate		super;
 	ClusterMapObjectServiceParam	param;
+	Client                          monClient;
 } ClusterMapObjectServicePrivate;
 
 static void destroy(ClusterMap* obj) {
-	ClusterMapObjectServicePrivate *priv = obj->p;
-	
-	free(priv);
+	ClusterMapObjectServicePrivate *priv_p = obj->p;
+	// TODO
+	free(priv_p);
 }
 
 static ClusterMapMethod method = {
@@ -31,9 +38,64 @@ static ClusterMapMethod method = {
         .destroy = destroy,
 };
 
-bool clusterMapFetchOSMapFromMon(ClusterMapObjectServicePrivate *priv_p, char *os_map_path) {
-        // TODO
-        return true;
+typedef struct FetchOSMapCallbackArg {
+        bool                            rc;
+        ClusterMapObjectServicePrivate  *priv_p;
+        sem_t                           sem;
+} FetchOSMapCallbackArg;
+
+static void clusterMapFetchOSMapCallback(Client *client, Response *resp, void *p) {
+        FetchOSMapCallbackArg *cbarg_p = p;
+        ClusterMapObjectServicePrivate *priv_p;
+
+        if (resp->error_id) {
+                ELOG("clusterMapFetchOSMapCallback: Send request failed, error id:%d", resp->error_id);
+                cbarg_p->rc = false;
+        } else {
+                ClusterGetLatestObjectServiceMapResponse *cglosm_resp = (ClusterGetLatestObjectServiceMapResponse*)resp;
+                priv_p = cbarg_p->priv_p;
+                assert(priv_p->super.os_map == NULL);
+                priv_p->super.os_map = cglosm_resp->os_map;
+                cbarg_p->rc = true;
+        }
+        sem_post(&cbarg_p->sem);
+}
+
+static bool clusterMapFetchOSMapFromMon(ClusterMapObjectServicePrivate *priv_p, char *os_map_path) {
+        Client *mon_client = &priv_p->monClient;
+        ClusterGetLatestObjectServiceMapRequest *req = malloc(sizeof(*req));
+        bool free_req;
+        FetchOSMapCallbackArg cbarg;
+
+        cbarg.rc = false;
+        cbarg.priv_p = priv_p;
+        sem_init(&cbarg.sem, 0, 0);
+        req->super.resource_id = ResourceIdCluster;
+        req->super.request_id = ClusterRequestId_GetLatestObjectServiceMap;
+        bool rc = mon_client->m->sendRequest(mon_client, &req->super, clusterMapFetchOSMapCallback, &cbarg, &free_req);
+        if (rc == false) {
+                free(req);
+                return rc;
+        }
+        if (free_req) free(req);
+        sem_wait(&cbarg.sem);
+        rc = cbarg.rc;
+        return rc;
+}
+
+static bool clusterMapInitMonClient(ClusterMapObjectServicePrivate *priv_p) {
+        ClientParam param;
+        strcpy(param.host, priv_p->param.mon_host);
+        param.port = priv_p->param.mon_port;
+        param.read_buffer_size = 1 << 22;
+        param.read_tp = priv_p->param.read_tp;
+        param.write_tp = priv_p->param.write_tp;
+        param.worker_tp = priv_p->param.work_tp;
+        param.request_sender = MonSenders;
+        param.context = NULL;
+
+        bool rc = initClient(&priv_p->monClient, &param);
+        return rc;
 }
 
 bool initClusterMapObjectService(ClusterMap* obj, ClusterMapParam* param) {
@@ -48,6 +110,9 @@ bool initClusterMapObjectService(ClusterMap* obj, ClusterMapParam* param) {
 	obj->m = &method;
 	memcpy(&priv_p->param, mparam, sizeof(*mparam));
 	sprintf(os_map_path, OBJECT_SERVICE_MAP_BIN_PATH, mparam->object_service_id);
+
+	rc = clusterMapInitMonClient(priv_p);
+	if (rc == false) return rc;
 
         rc = fileUtilReadAFile(os_map_path, &buffer, &buf_len);
         if (rc == false) {

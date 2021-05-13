@@ -112,6 +112,9 @@ typedef struct ClusterMapObjectServiceParam {
 	char		mon_host[NETWORK_HOST_LEN + 1];
 	int		mon_port;
 	uint32_t	object_service_id;
+	ThreadPool      *work_tp;
+	ThreadPool      *write_tp;
+	ThreadPool      *read_tp;
 //	void		*context;
 //	void		(*cluster_map_upgrade)(ObjectServiceMap*, ObjectServiceMapChangeLog*, void*);
 } ClusterMapObjectServiceParam;
