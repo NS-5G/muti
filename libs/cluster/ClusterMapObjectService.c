@@ -42,10 +42,10 @@ typedef struct FetchOSMapCallbackArg {
         bool                            rc;
         ClusterMapObjectServicePrivate  *priv_p;
         sem_t                           sem;
-} FetchOSMapCallbackArg;
+} FetchOSMapCallbackArgument;
 
 static void clusterMapFetchOSMapCallback(Client *client, Response *resp, void *p) {
-        FetchOSMapCallbackArg *cbarg_p = p;
+        FetchOSMapCallbackArgument *cbarg_p = p;
         ClusterMapObjectServicePrivate *priv_p;
 
         if (resp->error_id) {
@@ -65,7 +65,7 @@ static bool clusterMapFetchOSMapFromMon(ClusterMapObjectServicePrivate *priv_p, 
         Client *mon_client = &priv_p->monClient;
         ClusterGetLatestObjectServiceMapRequest *req = malloc(sizeof(*req));
         bool free_req;
-        FetchOSMapCallbackArg cbarg;
+        FetchOSMapCallbackArgument cbarg;
 
         cbarg.rc = false;
         cbarg.priv_p = priv_p;
@@ -80,6 +80,23 @@ static bool clusterMapFetchOSMapFromMon(ClusterMapObjectServicePrivate *priv_p, 
         if (free_req) free(req);
         sem_wait(&cbarg.sem);
         rc = cbarg.rc;
+        if (rc == true) {
+                ssize_t buf_len;
+                buf_len = clusterMapDumpObjectServiceMapLength(priv_p->super.os_map);
+                void *buffer;
+                buffer = malloc(buf_len);
+                rc = clusterMapDumpObjectServiceMap(priv_p->super.os_map,  buffer, buf_len);
+                if (rc == false) {
+                        ELOG("Error dump object service map");
+                        assert(0);
+                }
+                rc = fileUtilWriteAFile(os_map_path, buffer, buf_len);
+                if (rc == false) {
+                        ELOG("Error dump object service map, path:%s", os_map_path);
+                        assert(0);
+                }
+                free(buffer);
+        }
         return rc;
 }
 
@@ -130,8 +147,9 @@ bool initClusterMapObjectService(ClusterMap* obj, ClusterMapParam* param) {
                         return rc;
                 }
                 free(buffer);
-                // TODO Fetch os version from mon, compare and update os map.
         }
+        priv_p->super.os_map->reference = 1;
+        // Start keep alive thread
 
 	return rc;
 }

@@ -226,7 +226,7 @@ bool initClusterMapMon(ClusterMap* obj, ClusterMapParam* param) {
 	        }
 	        free(buffer);
 	}
-
+	priv_p->super.os_map->reference = 1;
 	return true;
 error_out:
         clusterMapFreeOSMap(priv_p->super.os_map);

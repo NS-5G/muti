@@ -257,10 +257,6 @@ bool initClusterMap(ClusterMap* obj, ClusterMapParam* param) {
 	default:
 		assert(0);
 	}
-	if (rc == true) {
-	        ClusterMapPrivate *priv_p = obj->p;
-	        priv_p->os_map->reference = 1;
-	}
 	return rc;
 }
 
