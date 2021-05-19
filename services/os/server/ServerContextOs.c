@@ -31,7 +31,7 @@ bool initServerContextOs(ServerContextOs* this, ServerContextOsParam* param) {
         cmap_os_param.super.type = ClusterMapType_ObjectService;
         strcpy(cmap_os_param.mon_host, param->mon_host);
         cmap_os_param.mon_port = param->mon_port;
-        cmap_os_param.object_service_id = param->object_service_id;
+        cmap_os_param.os_id = param->object_service_id;
 
         rc = initClusterMap(&this->clusterMap, &cmap_os_param.super);
         sem_init(&this->stop_sem, 0, 0);

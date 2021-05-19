@@ -11,6 +11,7 @@
 #include <network/Socket.h>
 #include <util/Map.h>
 #include <util/LinkedList.h>
+#include <util/HouseKeeping.h>
 
 typedef enum ObjectServiceStatus {
 	ObjectServiceStatus_Online = 0,
@@ -111,10 +112,11 @@ typedef struct ClusterMapObjectServiceParam {
 	ClusterMapParam	super;
 	char		mon_host[NETWORK_HOST_LEN + 1];
 	int		mon_port;
-	uint32_t	object_service_id;
+	uint32_t	os_id;
 	ThreadPool      *work_tp;
 	ThreadPool      *write_tp;
 	ThreadPool      *read_tp;
+	HouseKeeping    *hk;
 //	void		*context;
 //	void		(*cluster_map_upgrade)(ObjectServiceMap*, ObjectServiceMapChangeLog*, void*);
 } ClusterMapObjectServiceParam;
@@ -125,5 +127,6 @@ extern ssize_t clusterMapDumpObjectServiceMapLength(ObjectServiceMap *);
 extern bool clusterMapDumpObjectServiceMap(ObjectServiceMap *,  char *, ssize_t);
 extern bool clusterMapParseObjectServiceMap(ObjectServiceMap *,  char *, ssize_t, ssize_t*);
 extern void clusterMapFreeOSMap(ObjectServiceMap *os_map);
+extern ObjectService* clusterMapGetObjectService(ObjectServiceMap *, uint32_t);
 
 #endif /* CLUSTER_CLUSTERMAP_H_ */

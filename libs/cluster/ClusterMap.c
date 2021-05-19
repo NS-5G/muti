@@ -235,6 +235,10 @@ void clusterMapPutObjectServiceMap(ClusterMap* obj, ObjectServiceMap* os_map) {
         }
 }
 
+ObjectService* clusterMapGetObjectService(ObjectServiceMap *os_map, uint32_t os_id) {
+        return os_map->os_map.m->get(&os_map->os_map, &os_id);
+}
+
 void clusterMapDestroy(ClusterMap* obj) {
         ClusterMapPrivate *priv_p = obj->p;
         clusterMapPutObjectServiceMap(obj,priv_p->os_map);

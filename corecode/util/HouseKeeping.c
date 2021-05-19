@@ -48,7 +48,7 @@ static void houseKeepingWorkerDo(Job *job_p) {
 	hk_worker->status = HouseKeepingWorkerStatus_Waiting;
 }
 
-static void houseKeepingAddWorker(HouseKeeping *this, HouseKeepingWorkerFun fun, void *argument, int interval) {
+static void* houseKeepingAddWorker(HouseKeeping *this, HouseKeepingWorkerFun fun, void *argument, int interval) {
 	HouseKeepingPrivate *priv_p = this->p;
 	HouseKeepingWorker *hk_worker = malloc(sizeof(*hk_worker));
 
@@ -62,6 +62,18 @@ static void houseKeepingAddWorker(HouseKeeping *this, HouseKeepingWorkerFun fun,
 	pthread_mutex_lock(&priv_p->worker_list_lock);
 	listAdd(&hk_worker->element, &priv_p->worker_list);
 	pthread_mutex_unlock(&priv_p->worker_list_lock);
+
+	return hk_worker;
+}
+
+static void houseKeepingRemoveWorker(HouseKeeping *this, void *p) {
+        HouseKeepingPrivate *priv_p = this->p;
+        HouseKeepingWorker *hk_worker = p;
+
+        pthread_mutex_lock(&priv_p->worker_list_lock);
+        listDel(&hk_worker->element);
+        pthread_mutex_unlock(&priv_p->worker_list_lock);
+        free(hk_worker);
 }
 
 static void destroy(HouseKeeping* this) {
@@ -79,6 +91,7 @@ static void destroy(HouseKeeping* this) {
 
 static HouseKeepingMethod method = {
 	.addWorker = houseKeepingAddWorker,
+	.removeWorker = houseKeepingRemoveWorker,
         .destroy = destroy,
 };
 

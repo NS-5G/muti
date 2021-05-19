@@ -14,7 +14,8 @@ typedef void (*HouseKeepingWorkerFun)(void*);
 
 typedef struct HouseKeeping HouseKeeping;
 typedef struct HouseKeepingMethod {
-        void    (*addWorker)(HouseKeeping *, HouseKeepingWorkerFun, void*, int interval);
+        void*   (*addWorker)(HouseKeeping *, HouseKeepingWorkerFun, void*, int interval);
+        void    (*removeWorker)(HouseKeeping *, void*);
         void    (*destroy)(HouseKeeping*);
 } HouseKeepingMethod;
 
