@@ -16,6 +16,7 @@
 #include <mon/client/MonSenders.h>
 #include <mon/share/Cluster.h>
 #include <Log.h>
+
 #include "ClusterMap.h"
 #include "ClusterMapPrivate.h"
 
@@ -26,6 +27,8 @@ typedef struct ClusterMapObjectServicePrivate {
 	ClusterMapObjectServiceParam	param;
 	Client                          monClient;
 	void                            *hk_worker;
+	ObjectServiceStatus		req_status;
+	ObjectService 			*os;
 } ClusterMapObjectServicePrivate;
 
 static void destroy(ClusterMap* obj) {
@@ -45,6 +48,13 @@ typedef struct ClusterMapCallbackArgument {
         ClusterMapObjectServicePrivate  *priv_p;
         sem_t                           sem;
 } ClusterMapCallbackArgument;
+
+typedef struct ClusterMapCallbackArgument1 {
+        bool                            rc;
+        ClusterMapObjectServicePrivate  *priv_p;
+        HouseKeepingCallback		hk_callback;
+        void				*hk_callback_arg;
+} ClusterMapCallbackArgument1;
 
 static void clusterMapFetchOSMapCallback(Client *client, Response *resp, void *p) {
         ClusterMapCallbackArgument *cbarg_p = p;
@@ -119,37 +129,59 @@ static bool clusterMapInitMonClient(ClusterMapObjectServicePrivate *priv_p) {
 
 
 static void clusterMapOSKeepAliveCallback(Client *client, Response *resp, void *p) {
-        // TODO
+	ClusterMapCallbackArgument1 *cbarg = p;
+	ClusterMapObjectServicePrivate *priv_p = cbarg->priv_p;
+	ObjectService *os = priv_p->os;;
+
+	if (resp->error_id) {
+		os->status = ObjectServiceStatus_Offline;
+		priv_p->req_status = ObjectServiceStatus_ReadyToJoin;
+	} else {
+		ClusterKeepAliveObjectServiceResponse *resp1 = (ClusterKeepAliveObjectServiceResponse*)resp;
+		if (resp1->status == ObjectServiceStatus_Error) {
+			// TODO
+		}
+		if (priv_p->req_status == ObjectServiceStatus_ReadyToJoin &&
+				resp1->status == ObjectServiceStatus_Syncing) {
+			priv_p->req_status = ObjectServiceStatus_Syncing;
+			// TODO do syncing
+		} else {
+			priv_p->req_status = resp1->status;
+		}
+	}
+	cbarg->hk_callback(cbarg->hk_callback_arg);
+	free(cbarg);
 }
 
-static void clusterMapKeepAliveHouseKeepingWorker(void *p) {
+static void clusterMapKeepAliveHouseKeepingWorker(void *p, HouseKeepingCallback callback, void *arg) {
         ClusterMap* this = p;
         ClusterMapObjectServicePrivate *priv_p = this->p;
         Client *mon_client = &priv_p->monClient;
         ClusterKeepAliveObjectServiceRequest *req = malloc(sizeof(*req));
         ObjectService *os;
         bool free_req;
-        ClusterMapCallbackArgument cbarg;
+        ClusterMapCallbackArgument1 *cbarg = malloc(sizeof(*cbarg));
 
-        cbarg.rc = false;
-        cbarg.priv_p = priv_p;
-        sem_init(&cbarg.sem, 0, 0);
+        cbarg->rc = false;
+        cbarg->priv_p = priv_p;
+        cbarg->hk_callback = callback;
+        cbarg->hk_callback_arg = arg;
+
         req->super.resource_id = ResourceIdCluster;
         req->super.request_id = ClusterRequestId_KeepAliveObjectService;
         req->os_id = priv_p->param.os_id;
         req->version = priv_p->super.os_map->version;
-        os = clusterMapGetObjectService(priv_p->super.os_map, priv_p->param.os_id);
-        req->status = os->status;  // TODO need modify
-        bool rc = mon_client->m->sendRequest(mon_client, &req->super, clusterMapOSKeepAliveCallback, &cbarg, &free_req);
+        os = priv_p->os;
+        req->status = priv_p->req_status;
+        bool rc = mon_client->m->sendRequest(mon_client, &req->super, clusterMapOSKeepAliveCallback, cbarg, &free_req);
         if (rc == false) {
                 os->status = ObjectServiceStatus_Offline;
                 free(req);
+                callback(arg);
+                free(cbarg);
                 return;
         }
         if (free_req) free(req);
-        sem_wait(&cbarg.sem);
-        rc = cbarg.rc;
-        // TODO
 }
 
 bool initClusterMapObjectService(ClusterMap* this, ClusterMapParam* param) {
@@ -186,8 +218,8 @@ bool initClusterMapObjectService(ClusterMap* this, ClusterMapParam* param) {
                 free(buffer);
         }
         priv_p->super.os_map->reference = 1;
-        ObjectService *os = clusterMapGetObjectService(priv_p->super.os_map, priv_p->param.os_id);
-        os->status = ObjectServiceStatus_ReadyToJoin;
+        priv_p->req_status = ObjectServiceStatus_ReadyToJoin;
+        priv_p->os = clusterMapGetObjectService(priv_p->super.os_map, priv_p->param.os_id);
         // Start keep alive thread
         HouseKeeping *hk_p = priv_p->param.hk;
         priv_p->hk_worker = hk_p->m->addWorker(hk_p, clusterMapKeepAliveHouseKeepingWorker, this, 5);

@@ -10,7 +10,9 @@
 #include <stdbool.h>
 #include <util/ThreadPool.h>
 
-typedef void (*HouseKeepingWorkerFun)(void*);
+typedef void (*HouseKeepingCallback)(void *);
+
+typedef void (*HouseKeepingWorkerFun)(void*, HouseKeepingCallback, void *);
 
 typedef struct HouseKeeping HouseKeeping;
 typedef struct HouseKeepingMethod {

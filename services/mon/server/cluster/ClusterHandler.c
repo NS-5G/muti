@@ -96,7 +96,7 @@ static StatMap SyncingStatMap[] = {
                 {ObjectServiceStatus_Online, ObjectServiceStatus_Online},
                 {ObjectServiceStatus_Syncing, ObjectServiceStatus_Syncing},
                 {ObjectServiceStatus_Offline, ObjectServiceStatus_Offline},
-                {ObjectServiceStatus_ReadyToJoin, ObjectServiceStatus_Error},
+                {ObjectServiceStatus_ReadyToJoin, ObjectServiceStatus_Syncing},
                 {ObjectServiceStatus_Error, ObjectServiceStatus_Error},
 };
 
@@ -110,9 +110,9 @@ static StatMap OfflineStatMap[] = {
 
 static StatMap ReadyToJoinStatMap[] = {
                 {ObjectServiceStatus_Online, ObjectServiceStatus_Error},
-                {ObjectServiceStatus_Syncing, ObjectServiceStatus_Syncing},
+                {ObjectServiceStatus_Syncing, ObjectServiceStatus_Error},
                 {ObjectServiceStatus_Offline, ObjectServiceStatus_Error},
-                {ObjectServiceStatus_ReadyToJoin, ObjectServiceStatus_ReadyToJoin},
+                {ObjectServiceStatus_ReadyToJoin, ObjectServiceStatus_Error},
                 {ObjectServiceStatus_Error, ObjectServiceStatus_Error},
 };
 
@@ -120,7 +120,7 @@ static StatMap ErrorStatMap[] = {
                 {ObjectServiceStatus_Online, ObjectServiceStatus_Error},
                 {ObjectServiceStatus_Syncing, ObjectServiceStatus_Error},
                 {ObjectServiceStatus_Offline, ObjectServiceStatus_Error},
-                {ObjectServiceStatus_ReadyToJoin, ObjectServiceStatus_Error},
+                {ObjectServiceStatus_ReadyToJoin, ObjectServiceStatus_Syncing},
                 {ObjectServiceStatus_Error, ObjectServiceStatus_Error},
 };
 
@@ -150,7 +150,7 @@ static StatMap *MonStatMap[] = {
  *      Online                          Syncing                 Online
  *      Syncing                         Syncing                 Syncing
  *      Offline                         Syncing                 Offline
- *      Ready to join                   Syncing                 Error
+ *      Ready to join                   Syncing                 Syncing
  *      Error                           Syncing                 Error
  *
  *      Online                          Offline                 Online
@@ -160,15 +160,15 @@ static StatMap *MonStatMap[] = {
  *      Error                           Offline                 Error
  *
  *      Online                          Ready to join           Error
- *      Syncing                         Ready to join           Syncing
+ *      Syncing                         Ready to join           Error
  *      Offline                         Ready to join           Error
- *      Ready to join                   Ready to join           Ready to join
+ *      Ready to join                   Ready to join           Error
  *      Error                           Ready to join           Error
  *
  *      Online                          Error                   Error
  *      Syncing                         Error                   Error
  *      Offline                         Error                   Error
- *      Ready to join                   Error                   Error
+ *      Ready to join                   Error                   Syncing
  *      Error                           Error                   Error
  */
 void ClusterActionKeepAliveObjectService(SRequest *req) {

@@ -38,14 +38,18 @@ typedef struct HouseKeepingWorker {
 	int				counter;
 } HouseKeepingWorker;
 
-static void houseKeepingWorkerDo(Job *job_p) {
-	HouseKeepingWorker *hk_worker = containerOf(job_p, HouseKeepingWorker, job);
-
-	hk_worker->fun(hk_worker->argument);
+static void houseKeepingWorkerDoCallback(void *p) {
+	HouseKeepingWorker *hk_worker = p;
 	assert(hk_worker->status == HouseKeepingWorkerStatus_Busy
 		&& hk_worker->counter == 0);
 	hk_worker->counter = hk_worker->interval;
 	hk_worker->status = HouseKeepingWorkerStatus_Waiting;
+}
+
+static void houseKeepingWorkerDo(Job *job_p) {
+	HouseKeepingWorker *hk_worker = containerOf(job_p, HouseKeepingWorker, job);
+
+	hk_worker->fun(hk_worker->argument, houseKeepingWorkerDoCallback, hk_worker);
 }
 
 static void* houseKeepingAddWorker(HouseKeeping *this, HouseKeepingWorkerFun fun, void *argument, int interval) {
