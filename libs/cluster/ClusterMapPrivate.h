@@ -9,8 +9,10 @@
 #define CLUSTER_CLUSTERMAPPRIVATE_H_
 
 #include "ClusterMap.h"
+#include <pthread.h>
 
 typedef struct ClusterMapPrivate {
+	pthread_rwlock_t	os_map_lock;
 	ObjectServiceMap	*os_map;
 } ClusterMapPrivate;
 

@@ -218,19 +218,30 @@ error_out:
 
 ObjectServiceMap* clusterMapGetObjectServiceMap(ClusterMap* obj) {
 	ClusterMapPrivate *priv_p = obj->p;
-	__sync_add_and_fetch(&priv_p->os_map->reference, 1);
-	return priv_p->os_map;
+
+	pthread_rwlock_rdlock(&priv_p->os_map_lock);
+	ObjectServiceMap *os_map = priv_p->os_map;
+	if (os_map == NULL) {
+		pthread_rwlock_unlock(&priv_p->os_map_lock);
+		return NULL;
+	}
+	__sync_add_and_fetch(&os_map->reference, 1);
+	pthread_rwlock_unlock(&priv_p->os_map_lock);
+	return os_map;
 }
 
 void clusterMapPutObjectServiceMap(ClusterMap* obj, ObjectServiceMap* os_map) {
         ClusterMapPrivate *priv_p = obj->p;
+
         int left = __sync_sub_and_fetch(&os_map->reference, 1);
         if (left == 0) {
                 clusterMapFreeOSMap(os_map);
+                pthread_rwlock_wrlock(&priv_p->os_map_lock);
                 if (os_map == priv_p->os_map) {
                         // TODO Need lock check here
                         priv_p->os_map = NULL;
                 }
+                pthread_rwlock_unlock(&priv_p->os_map_lock);
                 free(os_map);
         }
 }

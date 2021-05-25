@@ -188,6 +188,7 @@ bool initClusterMapMon(ClusterMap* obj, ClusterMapParam* param) {
 	memcpy(&priv_p->param, mparam, sizeof(*mparam));
 	priv_p->super.os_map = calloc(sizeof(*priv_p->super.os_map), 1);
 	listHeadInit(&priv_p->super.os_map->object_service_list);
+	pthread_rwlock_init(&priv_p->super.os_map_lock, NULL);
 	
 	rc = fileUtilReadAFile(MON_OBJECT_SERVICE_MAP_BIN_PATH, &buffer, &buf_len);
 	if (rc == false) {
