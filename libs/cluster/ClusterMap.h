@@ -108,6 +108,7 @@ typedef struct ClusterMapClientParam {
 	int		mon_port;
 } ClusterMapClientParam;
 
+struct OSSyncing;
 typedef struct ClusterMapObjectServiceParam {
 	ClusterMapParam	super;
 	char		mon_host[NETWORK_HOST_LEN + 1];
@@ -117,8 +118,7 @@ typedef struct ClusterMapObjectServiceParam {
 	ThreadPool      *write_tp;
 	ThreadPool      *read_tp;
 	HouseKeeping    *hk;
-//	void		*context;
-//	void		(*cluster_map_upgrade)(ObjectServiceMap*, ObjectServiceMapChangeLog*, void*);
+	struct OSSyncing *ossync;
 } ClusterMapObjectServiceParam;
 
 bool initClusterMap(ClusterMap*, ClusterMapParam*);

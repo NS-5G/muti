@@ -16,6 +16,7 @@
 #include <mon/client/MonSenders.h>
 #include <mon/share/Cluster.h>
 #include <Log.h>
+#include <os/OSSyncing.h>
 
 #include "ClusterMap.h"
 #include "ClusterMapPrivate.h"
@@ -53,6 +54,9 @@ typedef struct ClusterMapCallbackArgument1 {
         ClusterMap			*cmap;
         HouseKeepingCallback		hk_callback;
         void				*hk_callback_arg;
+
+        ObjectServiceMap                *os_map;
+        ObjectService                   *os;
 } ClusterMapCallbackArgument1;
 
 static void clusterMapFetchOSMapCallback(Client *client, Response *resp, void *p) {
@@ -126,6 +130,19 @@ static bool clusterMapInitMonClient(ClusterMapObjectServicePrivate *priv_p) {
         return rc;
 }
 
+void clusterMapSyncMasterNodeCallback(void *p) {
+        ClusterMapCallbackArgument1 *cbarg = p;
+        ClusterMap *this = cbarg->cmap;
+        ClusterMapObjectServicePrivate *priv_p = this->p;
+        ObjectServiceMap* os_map = cbarg->os_map;
+        ObjectService *os = cbarg->os;
+
+        os->status = ObjectServiceStatus_Online;
+        priv_p->req_status = ObjectServiceStatus_Online;
+
+        clusterMapPutObjectServiceMap(this, os_map);
+        free(cbarg);
+}
 
 static void clusterMapOSKeepAliveCallback(Client *client, Response *resp, void *p) {
 	ClusterMapCallbackArgument1 *cbarg = p;
@@ -136,14 +153,27 @@ static void clusterMapOSKeepAliveCallback(Client *client, Response *resp, void *
 	assert(os_map != NULL);
 	ObjectService *os = clusterMapGetObjectService(os_map, priv_p->param.os_id);
 	if (resp->error_id) {
-		os->status = ObjectServiceStatus_Offline;
-		priv_p->req_status = ObjectServiceStatus_ReadyToJoin;
+	        if (priv_p->req_status != ObjectServiceStatus_Syncing) {
+	                os->status = ObjectServiceStatus_Offline;
+		        priv_p->req_status = ObjectServiceStatus_ReadyToJoin;
+	        }
 	} else {
 		ClusterKeepAliveObjectServiceResponse *resp1 = (ClusterKeepAliveObjectServiceResponse*)resp;
 		if (resp1->version > os_map->version) {
 
 		} else {
 			assert(resp1->version == os_map->version);
+			if (priv_p->req_status == ObjectServiceStatus_ReadyToJoin) {
+			        priv_p->req_status = ObjectServiceStatus_Syncing;
+			        os->status = ObjectServiceStatus_Syncing;
+
+			        OSSyncing *ossync = priv_p->param.ossync;
+			        cbarg->os_map = os_map;
+			        cbarg->os = os;
+			        cbarg->hk_callback(cbarg->hk_callback_arg);
+			        ossync->m->sync_master_node(ossync, os_map, os, clusterMapSyncMasterNodeCallback, cbarg);
+			        return;
+			}
 		}
 	}
 	clusterMapPutObjectServiceMap(this, os_map);
