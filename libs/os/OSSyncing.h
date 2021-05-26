@@ -14,7 +14,7 @@ typedef void (*OSSyncingCallback)(void *);
 
 typedef struct OSSyncing OSSyncing;
 typedef struct OSSyncingMethod {
-        void    (*sync_master_node)(OSSyncing*, ObjectServiceMap*, ObjectService *, OSSyncingCallback, void *);
+        void    (*syncMasterNode)(OSSyncing*, ObjectServiceMap*, ObjectService *, OSSyncingCallback, void *);
         void    (*destroy)(OSSyncing*);
 } OSSyncingMethod;
 

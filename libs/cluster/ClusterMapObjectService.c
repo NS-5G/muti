@@ -171,7 +171,7 @@ static void clusterMapOSKeepAliveCallback(Client *client, Response *resp, void *
 			        cbarg->os_map = os_map;
 			        cbarg->os = os;
 			        cbarg->hk_callback(cbarg->hk_callback_arg);
-			        ossync->m->sync_master_node(ossync, os_map, os, clusterMapSyncMasterNodeCallback, cbarg);
+			        ossync->m->syncMasterNode(ossync, os_map, os, clusterMapSyncMasterNodeCallback, cbarg);
 			        return;
 			}
 		}

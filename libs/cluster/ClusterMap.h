@@ -81,8 +81,8 @@ typedef enum ClusterMapType {
 
 typedef struct ClusterMap ClusterMap;
 typedef struct ClusterMapMethod {
-	int			(*RemoveObjectService)(ClusterMap*, uint32_t);
-	int			(*AddObjectService)(ClusterMap*, ObjectService*);
+	int			(*removeObjectService)(ClusterMap*, uint32_t);
+	int			(*addObjectService)(ClusterMap*, ObjectService*);
 	ObjectServiceMap* 	(*getObjectServiceMap)(ClusterMap*);
 	void                    (*putObjectServiceMap)(ClusterMap*, ObjectServiceMap *);
         void    		(*destroy)(ClusterMap*);
