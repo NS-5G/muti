@@ -59,7 +59,7 @@ typedef struct ClusterMapCallbackArgument1 {
         ObjectService                   *os;
 } ClusterMapCallbackArgument1;
 
-static void clusterMapFetchOSMapCallback(Client *client, Response *resp, void *p) {
+static void clusterMapFetchOSMapCallback(Client *client, Response *resp, void *p, bool *free_resp, ClientFreeResp freeResp, void *resp_ctx) {
         ClusterMapCallbackArgument *cbarg_p = p;
         ClusterMapObjectServicePrivate *priv_p;
 
@@ -144,7 +144,7 @@ void clusterMapSyncMasterNodeCallback(void *p) {
         free(cbarg);
 }
 
-static void clusterMapOSKeepAliveCallback(Client *client, Response *resp, void *p) {
+static void clusterMapOSKeepAliveCallback(Client *client, Response *resp, void *p, bool *free_resp, ClientFreeResp freeResp, void *resp_ctx) {
 	ClusterMapCallbackArgument1 *cbarg = p;
 	ClusterMap *this = cbarg->cmap;
 	ClusterMapObjectServicePrivate *priv_p = this->p;
@@ -160,7 +160,7 @@ static void clusterMapOSKeepAliveCallback(Client *client, Response *resp, void *
 	} else {
 		ClusterKeepAliveObjectServiceResponse *resp1 = (ClusterKeepAliveObjectServiceResponse*)resp;
 		if (resp1->version > os_map->version) {
-
+		        // TODO
 		} else {
 			assert(resp1->version == os_map->version);
 			if (priv_p->req_status == ObjectServiceStatus_ReadyToJoin) {

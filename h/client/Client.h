@@ -13,8 +13,8 @@
 #include <client/RequestSender.h>
 
 typedef struct Client Client;
-
-typedef void (*ClientSendCallback)(Client *, Response *, void *);
+typedef void (*ClientFreeResp)(void *);
+typedef void (*ClientSendCallback)(Client *, Response *, void *, bool *free_resp, ClientFreeResp freeResp, void *resp_ctx);
 
 typedef struct ClientMethod {
         bool    (*sendRequest)(Client*, Request*, ClientSendCallback, void *, bool *free_req);

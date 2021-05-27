@@ -132,7 +132,7 @@ out:
         return 0;
 }
 
-static void ServiceClientStatusSendCallback(Client *client, Response *resp, void *p) {
+static void ServiceClientStatusSendCallback(Client *client, Response *resp, void *p, bool *free_resp, ClientFreeResp freeResp, void *resp_ctx) {
         sem_t *sem_p = p;
         if (resp->error_id == 0) {
                 ClusterStatusResponse *resp1 = (ClusterStatusResponse*)resp;

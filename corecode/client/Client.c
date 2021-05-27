@@ -90,7 +90,7 @@ static void clientOnClose(Connection *conn) {
                 pthread_mutex_lock(lock);
                 listForEachEntrySafe(send_arg, arg1, slot, element) {
                         listDel(&send_arg->element);
-                        send_arg->callback(this, &err_resp, send_arg->arg);
+                        send_arg->callback(this, &err_resp, send_arg->arg, NULL, NULL, NULL);
                         if (send_arg->wbuf) {
                                 free(send_arg->wbuf);
                                 send_arg->wbuf = NULL;
@@ -150,13 +150,9 @@ static inline void clientRead(Connection* conn_p, ClientPrivate *priv_p, Readbuf
         }
 }
 
-static void clientDoJob(Job *job) {
-        ClientSendArg *send_arg = containerOf(job, ClientSendArg, job);
+static void clientFreeResp(void *arg) {
+        ClientSendArg *send_arg = arg;
         Connection *conn_p = send_arg->conn;
-        Socket* skt = conn_p->m->getSocket(conn_p);
-        Client* this = skt->m->getContext(skt);
-
-        send_arg->callback(this, send_arg->response, send_arg->arg);
         Readbuffer *rbuf = send_arg->rbuf;
         clientFreeReadBuffer(rbuf, conn_p);
 
@@ -166,6 +162,28 @@ static void clientDoJob(Job *job) {
         int left = __sync_sub_and_fetch(&send_arg->ref, 1);
         if (left == 0) {
                 free(send_arg);
+        }
+}
+
+static void clientDoJob(Job *job) {
+        ClientSendArg *send_arg = containerOf(job, ClientSendArg, job);
+        Connection *conn_p = send_arg->conn;
+        Socket* skt = conn_p->m->getSocket(conn_p);
+        Client* this = skt->m->getContext(skt);
+        bool free_resp = true;
+
+        send_arg->callback(this, send_arg->response, send_arg->arg, &free_resp, clientFreeResp, send_arg);
+        if (free_resp) {
+                Readbuffer *rbuf = send_arg->rbuf;
+                clientFreeReadBuffer(rbuf, conn_p);
+
+                if (send_arg->free_resp) {
+                        free(send_arg->response);
+                }
+                int left = __sync_sub_and_fetch(&send_arg->ref, 1);
+                if (left == 0) {
+                        free(send_arg);
+                }
         }
 }
 
@@ -283,7 +301,7 @@ static void clientWriteCallback(Connection *conn, bool rc, void *cbarg) {
 
                 Response resp;
                 resp.error_id = -3;
-                send_arg->callback(this, &resp, send_arg->arg);
+                send_arg->callback(this, &resp, send_arg->arg, NULL, NULL, NULL);
                 free(send_arg->wbuf);
                 free(send_arg);
         } else {
@@ -356,7 +374,7 @@ typedef struct ClientSendReqSyncCbarg {
 	int32_t error_id;
 } ClientSendReqSyncCbarg;
 
-static void clientSendRequestSyncCallbck(Client *this, Response *resp, void *p) {
+static void clientSendRequestSyncCallbck(Client *this, Response *resp, void *p, bool *free_resp, ClientFreeResp freeResp, void *resp_ctx) {
 	ClientSendReqSyncCbarg *cbargp = p;
 	cbargp->error_id = resp->error_id;
 	sem_post(&cbargp->sem);

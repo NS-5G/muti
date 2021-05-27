@@ -20,7 +20,7 @@
 #include <example/client/ExampleSenders.h>
 #include <example/share/Foo.h>
 
-static void UtClientFooPutSendCallback(Client *client, Response *resp, void *arg) {
+static void UtClientFooPutSendCallback(Client *client, Response *resp, void *arg, bool *free_resp, ClientFreeResp freeResp, void *resp_ctx) {
         if (resp->error_id) {
            //     ELOG("Send request failed error_id:%d.", resp->error_id);
         }
