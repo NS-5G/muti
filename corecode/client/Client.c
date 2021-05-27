@@ -146,7 +146,7 @@ static inline void clientRead(Connection* conn_p, ClientPrivate *priv_p, Readbuf
                         clientReadCallback, rbuf);
         if (rrc == false) {
                 clientFreeReadBuffer(rbuf, conn_p);
-                clientFreeReadBuffer(rbuf, conn_p);
+//                clientFreeReadBuffer(rbuf, conn_p);
         }
 }
 
