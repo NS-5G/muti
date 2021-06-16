@@ -154,8 +154,8 @@ static void clientFreeResp(void *arg) {
         ClientSendArg *send_arg = arg;
         Connection *conn_p = send_arg->conn;
         Readbuffer *rbuf = send_arg->rbuf;
-        clientFreeReadBuffer(rbuf, conn_p);
 
+        clientFreeReadBuffer(rbuf, conn_p);
         if (send_arg->free_resp) {
                 free(send_arg->response);
         }
@@ -321,6 +321,7 @@ static bool clientSendRequest(Client* this, Request* req, ClientSendCallback cal
         Connection *conn_p = priv_p->conn;
         if (conn_p == NULL) {
                 *free_req = true;
+                ELOG("Connection not create.");
                 return false;
         }
 
@@ -340,6 +341,7 @@ static bool clientSendRequest(Client* this, Request* req, ClientSendCallback cal
         if (rc == false) {
                 *free_req = true;
                 free(send_arg);
+                ELOG("Encoding request error!");
                 return rc;
         }
 
@@ -355,6 +357,7 @@ static bool clientSendRequest(Client* this, Request* req, ClientSendCallback cal
 
         rc = conn_p->m->write(conn_p, send_arg->wbuf, send_arg->wbuf_len, clientWriteCallback, send_arg);
         if (rc == false) {
+                ELOG("Send request buffer failed.");
                 __sync_add_and_fetch(&ccxt->write_done_counter, 1);
                 pthread_mutex_lock(lock);
                 listDel(&send_arg->element);
@@ -377,6 +380,7 @@ typedef struct ClientSendReqSyncCbarg {
 static void clientSendRequestSyncCallbck(Client *this, Response *resp, void *p, bool *free_resp, ClientFreeResp freeResp, void *resp_ctx) {
 	ClientSendReqSyncCbarg *cbargp = p;
 	cbargp->error_id = resp->error_id;
+	DLOG("Response error id:%d", resp->error_id);
 	sem_post(&cbargp->sem);
 }
 
@@ -387,7 +391,7 @@ static bool clientSendRequestSync(Client* this, Request* req, bool *free_req) {
 	bool rc = clientSendRequest(this, req, clientSendRequestSyncCallbck, &cbarg, free_req);
 	if (rc == true) sem_wait(&cbarg.sem);
 	else return rc;
-	rc = cbarg.error_id == 0;
+	rc = (cbarg.error_id == 0);
 	if (rc == false) {
 		ELOG("Request %d got error, error id:%d", req->resource_id, cbarg.error_id);
 	}
@@ -451,6 +455,7 @@ bool initClient(Client* this, ClientParam* param) {
         sparam.super.context = this;
         rc = initSocketLinux(&priv_p->socket, &sparam);
         if (rc == false) {
+                ELOG("initSocketLinux error.");
                 free(priv_p);
                 goto out;
         }

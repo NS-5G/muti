@@ -14,15 +14,15 @@
 #include <cluster/ClusterMap.h>
 
 typedef enum {
-	ClusterRequestId_GetObjectServiceMapLatestVersion = 0,
-        ClusterRequestId_GetLatestObjectServiceMap,
-        ClusterRequestId_AddObjectService,
-	ClusterRequestId_RemoveObjectService,
-	ClusterRequestId_KeepAliveObjectService,
-	ClusterRequestId_KeepAliveClient,
-	ClusterRequestId_GetObjectServiceMapChangeLog,
-	ClusterRequestId_Status,
-	ClusterRequestId_Stop,
+	ClusterRequestIdGetObjectServiceMapLatestVersion = 0,
+        ClusterRequestIdGetLatestObjectServiceMap,
+        ClusterRequestIdAddObjectService,
+	ClusterRequestIdRemoveObjectService,
+	ClusterRequestIdKeepAliveObjectService,
+	ClusterRequestIdKeepAliveClient,
+	ClusterRequestIdGetObjectServiceMapChangeLog,
+	ClusterRequestIdStatus,
+	ClusterRequestIdStop,
 } ClusterRequestId;
 
 typedef struct ClusterGetObjectServiceMapLatestVersionRequest {

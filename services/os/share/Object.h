@@ -16,6 +16,7 @@ typedef enum {
         ObjectRequestIdPut = 1,
         ObjectRequestIdList = 2,
 	ObjectRequestIdDelete = 3,
+	ObjectRequestIdStop = 4,
 } ObjectRequestId;
 
 typedef struct Object {
@@ -75,5 +76,13 @@ typedef struct ObjectDeleteRequest {
 typedef struct ObjectDeleteResponse {
         Response        super;
 } ObjectDeleteResponse;
+
+typedef struct ObjectStopRequest {
+        Request         super;
+} ObjectStopRequest;
+
+typedef struct ObjectStopResponse {
+        Response        super;
+} ObjectStopResponse;
 
 #endif /* RES_OBJECT_H_ */

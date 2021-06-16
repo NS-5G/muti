@@ -10,6 +10,9 @@
 #include <stdbool.h>
 #include <semaphore.h>
 #include <cluster/ClusterMap.h>
+#include <os/OSSyncing.h>
+#include <util/HouseKeeping.h>
+#include <util/ThreadPool.h>
 
 typedef struct ServerContextOs ServerContextOs;
 typedef struct ServerContextOsMethod {
@@ -19,8 +22,15 @@ typedef struct ServerContextOsMethod {
 struct ServerContextOs {
         void                    *p;
         ServerContextOsMethod   *m;
-        ClusterMap              clusterMap;
+        ClusterMap              cluster_map;
+        OSSyncing               ossyncing;
+        HouseKeeping            house_keeping;
+        ThreadPool              read_tp;
+        ThreadPool              write_tp;
+        ThreadPool              work_tp;
         sem_t                   stop_sem;
+        char                    os_host[NETWORK_HOST_LEN + 1];
+        int                     os_port;
 };
 
 typedef struct ServerContextOsParam {

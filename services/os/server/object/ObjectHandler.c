@@ -5,9 +5,12 @@
  *      Author: root
  */
 #include <os/server/object/ObjectHandler.h>
-#include <string.h>
 
+#include <string.h>
 #include <stdbool.h>
+#include <pthread.h>
+#include <unistd.h>
+
 #include <os/share/Object.h>
 #include <server/Server.h>
 #include "../ServerContextOs.h"
@@ -19,6 +22,8 @@ Action ObjectActions[] = {
         ObjectActionGet,
         ObjectActionPut,
         ObjectActionList,
+        ObjectActionDelete,
+        ObjectActionStop,
 };
 
 void ObjectActionGet(SRequest *req) {
@@ -76,10 +81,53 @@ void ObjectActionList(SRequest *req) {
         req->action_callback(req);
 }
 
+void ObjectActionDelete(SRequest *req) {
+        ObjectDeleteRequest *request = (ObjectDeleteRequest*) req->request;
+        Socket* socket = req->connection->m->getSocket(req->connection);
+        Server* server = socket->m->getContext(socket);
+        ServerContextOs *sctx = server->m->getContext(server);
+        Response *resp;
+        (void)sctx;
+        resp = calloc(1, sizeof(*resp));
+        resp->sequence = request->super.sequence;
+        resp->error_id = -1;
+
+        req->response = resp;
+        req->action_callback(req);
+}
+
+static void* objectActionStopThread(void *p) {
+        ServerContextOs *sctx = p;
+        sleep(2);
+        sem_post(&sctx->stop_sem);
+        return NULL;
+}
+
+void ObjectActionStop(SRequest *req) {
+        ObjectStopRequest *request = (ObjectStopRequest*) req->request;
+        Socket* socket = req->connection->m->getSocket(req->connection);
+        Server* server = socket->m->getContext(socket);
+        ServerContextOs *sctx = server->m->getContext(server);
+
+        pthread_t tid;
+        pthread_attr_t attr;
+        pthread_attr_init(&attr);
+        pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+        pthread_create(&tid, &attr, objectActionStopThread, sctx);
+
+        ObjectStopResponse *resp = malloc(sizeof(*resp));
+        resp->super.sequence = request->super.sequence;
+        resp->super.error_id = 0;
+        req->response = &resp->super;
+        req->action_callback(req);
+}
+
 RequestDecoder ObjectRequestDecoder[] = {
         ObjectRequestDecoderGet,
         ObjectRequestDecoderPut,
         ObjectRequestDecoderList,
+        ObjectRequestDecoderDelete,
+        ObjectRequestDecoderStop,
 };
 
 Request* ObjectRequestDecoderGet(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
@@ -115,10 +163,28 @@ Request* ObjectRequestDecoderList(Connection *conn_p, char *buffer, size_t buff_
         return &req->super;
 }
 
+Request* ObjectRequestDecoderDelete(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
+        ObjectDeleteRequest *req = (ObjectDeleteRequest*)buffer;
+        if (buff_len < sizeof(*req)) return NULL;
+        *consume_len = sizeof(*req);
+        *free_req = false;
+        return &req->super;
+}
+
+Request* ObjectRequestDecoderStop(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_req) {
+        ObjectStopRequest *req = (ObjectStopRequest*)buffer;
+        if (buff_len < sizeof(*req)) return NULL;
+        *consume_len = sizeof(*req);
+        *free_req = false;
+        return &req->super;
+}
+
 ResponseEncoder ObjectResponseEncoder[] = {
         ObjectResponseEncoderGet,
         ObjectResponseEncoderPut,
         ObjectResponseEncoderList,
+        ObjectResponseEncoderDelete,
+        ObjectResponseEncoderStop,
 };
 
 bool ObjectResponseEncoderGet(Connection *conn_p, Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
@@ -172,3 +238,18 @@ bool ObjectResponseEncoderList(Connection *conn_p, Response *resp, char **buffer
         return true;
 }
 
+bool ObjectResponseEncoderDelete(Connection *conn_p, Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
+        ObjectDeleteResponse *resp1 = (ObjectDeleteResponse*)resp;
+        *buffer = (char *)resp1;
+        *buff_len = sizeof(*resp1);
+        *free_resp = false;
+        return true;
+}
+
+bool ObjectResponseEncoderStop(Connection *conn_p, Response *resp, char **buffer, size_t *buff_len, bool *free_resp) {
+        ObjectStopResponse *resp1 = (ObjectStopResponse*)resp;
+        *buffer = (char *)resp1;
+        *buff_len = sizeof(*resp1);
+        *free_resp = false;
+        return true;
+}

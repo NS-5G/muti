@@ -14,6 +14,8 @@ RequestEncoder ObjectRequestEncoder[] = {
                 ObjectRequestEncoderGet,
                 ObjectRequestEncoderPut,
                 ObjectRequestEncoderList,
+                ObjectRequestEncoderDelete,
+                ObjectRequestEncoderStop,
 };
 
 bool ObjectRequestEncoderGet(Connection *conn_p, Request *req, char **buffer, size_t *buff_len, bool *free_req) {
@@ -40,10 +42,20 @@ bool ObjectRequestEncoderList(Connection *conn_p, Request *req, char **buffer, s
         return true;
 }
 
+bool ObjectRequestEncoderDelete(Connection *conn_p, Request *req, char **buffer, size_t *buff_len, bool *free_req) {
+        SENDER_REQUEST_ENCODER(ObjectDeleteRequest);
+}
+
+bool ObjectRequestEncoderStop(Connection *conn_p, Request *req, char **buffer, size_t *buff_len, bool *free_req) {
+        SENDER_REQUEST_ENCODER(ObjectStopRequest);
+}
+
 ResponseDecoder ObjectResponseDecoder[] = {
                 ObjectResponseDecoderGet,
                 ObjectResponseDecoderPut,
                 ObjectResponseDecoderList,
+                ObjectResponseDecoderDelete,
+                ObjectResponseDecoderStop,
 };
 
 Response* ObjectResponseDecoderGet(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_resp) {
@@ -112,3 +124,10 @@ err_out:
 	return NULL;
 }
 
+Response* ObjectResponseDecoderDelete(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_resp) {
+        SENDER_RESPONSE_DECODER(ObjectDeleteResponse);
+}
+
+Response* ObjectResponseDecoderStop(Connection *conn_p, char *buffer, size_t buff_len, size_t *consume_len, bool *free_resp) {
+        SENDER_RESPONSE_DECODER(ObjectStopResponse);
+}

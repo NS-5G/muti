@@ -77,6 +77,8 @@ static void houseKeepingRemoveWorker(HouseKeeping *this, void *p) {
         pthread_mutex_lock(&priv_p->worker_list_lock);
         listDel(&hk_worker->element);
         pthread_mutex_unlock(&priv_p->worker_list_lock);
+        while (hk_worker->status == HouseKeepingWorkerStatus_Busy) usleep(100000);
+
         free(hk_worker);
 }
 
@@ -103,7 +105,7 @@ static void* houseKeepingWorkerThread(void *p) {
 	HouseKeeping* this = p;
 	HouseKeepingPrivate *priv_p = this->p;
 	HouseKeepingWorker *hk_worker;
-	ThreadPool *tp = priv_p->param.working_tp;
+	ThreadPool *tp = priv_p->param.work_tp;
 	int left;
 	bool rc;
 

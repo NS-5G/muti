@@ -27,7 +27,7 @@ struct HouseKeeping {
 };
 
 typedef struct HouseKeepingParam {
-        ThreadPool      *working_tp;
+        ThreadPool      *work_tp;
 } HouseKeepingParam;
 
 bool initHouseKeeping(HouseKeeping*, HouseKeepingParam*);
